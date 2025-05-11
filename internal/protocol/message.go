@@ -8,3 +8,10 @@ type ReadFileReply struct {
 	Filename string
 	Data     []byte
 }
+
+type HeartBeatArgs struct {
+	Address string
+}
+
+type HeartBeatReply struct {
+}

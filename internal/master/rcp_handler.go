@@ -38,3 +38,15 @@ func (s *MasterService) ReadFile(args *protocol.ReadFileArgs, reply *protocol.Re
 
 	return nil
 }
+
+func (s *MasterService) HeartBeat(args *protocol.HeartBeatArgs, reply *protocol.HeartBeatReply) error {
+
+	if args == nil {
+		return fmt.Errorf("RPC Args is empty")
+	}
+	if reply == nil {
+		return fmt.Errorf("RPC Reply is empty")
+	}
+
+	return nil
+}

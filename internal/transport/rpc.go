@@ -31,24 +31,34 @@ func RegisterServices(services []interface{}) {
 	}
 }
 
-func StartRpcServer(port int, services ...interface{}) (*rpc.Client, error) {
+func StartRpcServer(address string, services ...interface{}) (*rpc.Client, error) {
 
 	RegisterServices(services)
 
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	listener, err := net.Listen("tcp", address)
 	if err != nil {
-		logger.Error(common.COMPONENT_COMMON, "Error creating listner", err)
+		logger.Error(common.COMPONENT_COMMON, fmt.Sprint("Error creating listener", err))
 	}
 	defer listener.Close()
 
-	logger.Info(common.COMPONENT_COMMON, fmt.Sprintf("Accepting Connections on Port :%d", port))
+	logger.Info(common.COMPONENT_COMMON, fmt.Sprintf("Accepting Connections on %s", listener.Addr().String()))
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			logger.Error(common.COMPONENT_COMMON, "Error accepting connection", err)
+			logger.Error(common.COMPONENT_COMMON, fmt.Sprint("Error accepting connection", err))
 			continue
 		}
 
 		go rpc.ServeConn(conn)
 	}
+}
+
+func GetAddressWithRandomPort() string {
+	listener, err := net.Listen("tcp", "0")
+	if err != nil {
+		logger.Error(common.COMPONENT_COMMON, fmt.Sprint("Error creating listner", err))
+	}
+	defer listener.Close()
+
+	return listener.Addr().String()
 }
