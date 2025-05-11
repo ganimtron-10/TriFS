@@ -1,9 +1,8 @@
 package master
 
 import (
-	"log"
-
 	"github.com/ganimtron-10/TriFS/internal/common"
+	"github.com/ganimtron-10/TriFS/internal/logger"
 )
 
 type MasterConfig struct {
@@ -21,7 +20,7 @@ func getDefaultMasterConfig() *MasterConfig {
 }
 
 func CreateMaster() *Master {
-	log.Println("Creating Master...")
+	logger.Info(common.COMPONENT_MASTER, "Creating Master...")
 	return &Master{
 		getDefaultMasterConfig(),
 	}

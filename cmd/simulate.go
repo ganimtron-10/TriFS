@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/ganimtron-10/TriFS/internal/client"
@@ -22,7 +21,6 @@ func main() {
 
 	go StartMaster()
 
-	fmt.Println("Waiting 5 sec to get Master up")
 	time.Sleep(time.Second * 5)
 
 	tc := client.CreateClient()

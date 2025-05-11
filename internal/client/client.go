@@ -1,9 +1,8 @@
 package client
 
 import (
-	"log"
-
 	"github.com/ganimtron-10/TriFS/internal/common"
+	"github.com/ganimtron-10/TriFS/internal/logger"
 	"github.com/ganimtron-10/TriFS/internal/protocol"
 	"github.com/ganimtron-10/TriFS/internal/transport"
 )
@@ -23,7 +22,7 @@ func getDefaultClientConfig() *ClientConfig {
 }
 
 func CreateClient() *Client {
-	log.Println("Creating Client...")
+	logger.Info(common.COMPONENT_CLIENT, "Creating Client...")
 	return &Client{
 		getDefaultClientConfig(),
 	}
@@ -40,8 +39,8 @@ func (client *Client) Read(filename string) {
 
 	err := transport.DialRpcCall(client.MasterAddress, "MasterService.ReadFile", args, reply)
 	if err != nil {
-		log.Println("Error while performing ReadFile", err)
+		logger.Error(common.COMPONENT_CLIENT, "Error while performing ReadFile", err)
 	}
 
-	log.Println("Response Data: ", reply.Data)
+	logger.Info(common.COMPONENT_CLIENT, "Response: ", "Data", reply.Data)
 }

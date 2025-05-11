@@ -2,13 +2,15 @@ package transport
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"net/rpc"
+
+	"github.com/ganimtron-10/TriFS/internal/common"
+	"github.com/ganimtron-10/TriFS/internal/logger"
 )
 
 func DialRpcCall(address string, rpcServiceName string, rpcRequest any, rpcResponse any) error {
-	log.Printf("Dialing RPC Call to %s", rpcServiceName)
+	logger.Info(common.COMPONENT_COMMON, fmt.Sprintf("Dialing RPC Call to %s", rpcServiceName))
 	rpcClient, err := rpc.Dial("tcp", address)
 	if err != nil {
 		return err
@@ -23,7 +25,7 @@ func DialRpcCall(address string, rpcServiceName string, rpcRequest any, rpcRespo
 }
 
 func RegisterServices(services []interface{}) {
-	log.Println("Registering Services...")
+	logger.Info(common.COMPONENT_COMMON, "Registering Services...")
 	for _, service := range services {
 		rpc.Register(service)
 	}
@@ -35,15 +37,15 @@ func StartRpcServer(port int, services ...interface{}) (*rpc.Client, error) {
 
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
-		log.Fatal("Error creating listner", err)
+		logger.Error(common.COMPONENT_COMMON, "Error creating listner", err)
 	}
 	defer listener.Close()
 
-	log.Printf("Accepting Connections on Port :%d", port)
+	logger.Info(common.COMPONENT_COMMON, fmt.Sprintf("Accepting Connections on Port :%d", port))
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			log.Println("Error accepting connection", err)
+			logger.Error(common.COMPONENT_COMMON, "Error accepting connection", err)
 			continue
 		}
 

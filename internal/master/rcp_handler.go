@@ -2,8 +2,9 @@ package master
 
 import (
 	"fmt"
-	"log"
 
+	"github.com/ganimtron-10/TriFS/internal/common"
+	"github.com/ganimtron-10/TriFS/internal/logger"
 	"github.com/ganimtron-10/TriFS/internal/protocol"
 )
 
@@ -12,7 +13,7 @@ type MasterService struct {
 }
 
 func CreateMasterService(master *Master) *MasterService {
-	log.Println("Creating Master Service...")
+	logger.Info(common.COMPONENT_MASTER, "Creating Master Service...")
 	return &MasterService{
 		master: master,
 	}
