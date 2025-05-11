@@ -3,8 +3,7 @@ package master
 import (
 	"log"
 
-	"github.com/ganimtron-10/TriFS/internal/service"
-	"github.com/ganimtron-10/TriFS/internal/transport"
+	"github.com/ganimtron-10/TriFS/internal/common"
 )
 
 type MasterConfig struct {
@@ -17,11 +16,12 @@ type Master struct {
 
 func getDefaultMasterConfig() *MasterConfig {
 	return &MasterConfig{
-		Port: 9867,
+		Port: common.DEFAULT_MASTER_PORT,
 	}
 }
 
 func CreateMaster() *Master {
+	log.Println("Creating Master...")
 	return &Master{
 		getDefaultMasterConfig(),
 	}
@@ -32,18 +32,6 @@ func (master *Master) AddConfig(config *MasterConfig) *Master {
 	return master
 }
 
-func RegisterAllService() {
-	log.Println("Registering Services...")
-	transport.RegisterService(new(service.FileService))
-}
-
-func (master *Master) Start() {
-	RegisterAllService()
-	transport.StartRpcServer(master.Port)
-}
-
-func Init() {
-	master := CreateMaster()
-	log.Println("Master Initializing...")
-	master.Start()
+func (master *Master) handleReadFile(filename string) ([]byte, error) {
+	return []byte{0, 1, 2, 3, 4, 5}, nil
 }

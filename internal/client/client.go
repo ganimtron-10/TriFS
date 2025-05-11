@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/ganimtron-10/TriFS/internal/common"
-	"github.com/ganimtron-10/TriFS/internal/service"
+	"github.com/ganimtron-10/TriFS/internal/protocol"
 	"github.com/ganimtron-10/TriFS/internal/transport"
 )
 
@@ -18,7 +18,7 @@ type Client struct {
 
 func getDefaultClientConfig() *ClientConfig {
 	return &ClientConfig{
-		MasterAddress: "localhost:9867",
+		MasterAddress: common.DEFAULT_MASTER_ADDRESS,
 	}
 }
 
@@ -34,22 +34,14 @@ func (client *Client) AddConfig(config *ClientConfig) *Client {
 	return client
 }
 
-func CreateReadFileRequest(filename string) *service.ReadFileRequest {
-	return &service.ReadFileRequest{
-		Message: &service.Message{
-			Code: common.MESSAGE_READ,
-		},
-		Filename: filename,
-	}
-}
-
 func (client *Client) Read(filename string) {
-	response := &service.ReadFileResponse{}
+	args := &protocol.ReadFileArgs{Filename: filename}
+	reply := &protocol.ReadFileReply{}
 
-	err := transport.SendRpcCall(client.MasterAddress, "FileService.Read", CreateReadFileRequest(filename), response)
+	err := transport.DialRpcCall(client.MasterAddress, "MasterService.ReadFile", args, reply)
 	if err != nil {
-		log.Println("Error while performing File Read", err)
+		log.Println("Error while performing ReadFile", err)
 	}
 
-	log.Println("Response Data: ", response.Data)
+	log.Println("Response Data: ", reply.Data)
 }
