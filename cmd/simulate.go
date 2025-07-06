@@ -2,9 +2,14 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/ganimtron-10/TriFS/internal/client"
+	"github.com/ganimtron-10/TriFS/internal/common"
+	"github.com/ganimtron-10/TriFS/internal/logger"
 	"github.com/ganimtron-10/TriFS/internal/master"
 	"github.com/ganimtron-10/TriFS/internal/transport"
 	"github.com/ganimtron-10/TriFS/internal/worker"
@@ -45,5 +50,9 @@ func main() {
 	tc.Read("test.txt")
 	tc.Write("test.txt", "This is the data that is to be written to the file")
 
-	select {}
+	// Wait for interrupt signal to gracefully shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	<-sigChan
+	logger.Info(common.COMPONENT_COMMON, "Shutting down simulation...")
 }
