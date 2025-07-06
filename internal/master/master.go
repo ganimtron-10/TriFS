@@ -1,12 +1,17 @@
 package master
 
 import (
+	"fmt"
+	"sync"
+
 	"github.com/ganimtron-10/TriFS/internal/common"
 	"github.com/ganimtron-10/TriFS/internal/logger"
 )
 
 type MasterConfig struct {
-	Port int
+	Port           int
+	WorkerPool     map[string]int
+	WorkerPoolLock sync.RWMutex
 }
 
 type Master struct {
@@ -15,7 +20,8 @@ type Master struct {
 
 func getDefaultMasterConfig() *MasterConfig {
 	return &MasterConfig{
-		Port: common.DEFAULT_MASTER_PORT,
+		Port:       common.DEFAULT_MASTER_PORT,
+		WorkerPool: make(map[string]int),
 	}
 }
 
@@ -32,5 +38,8 @@ func (master *Master) AddConfig(config *MasterConfig) *Master {
 }
 
 func (master *Master) handleReadFile(filename string) ([]byte, error) {
+	// return the worker url to access the file
+	fmt.Println(master.WorkerPool)
+
 	return []byte{0, 1, 2, 3, 4, 5}, nil
 }

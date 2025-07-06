@@ -19,13 +19,20 @@ func CreateMasterService(master *Master) *MasterService {
 	}
 }
 
-func (s *MasterService) ReadFile(args *protocol.ReadFileArgs, reply *protocol.ReadFileReply) error {
-
+func validateArgsNReply(args, reply any) error {
 	if args == nil {
 		return fmt.Errorf("RPC Args is empty")
 	}
 	if reply == nil {
 		return fmt.Errorf("RPC Reply is empty")
+	}
+
+	return nil
+}
+
+func (s *MasterService) ReadFile(args *protocol.ReadFileArgs, reply *protocol.ReadFileReply) error {
+	if err := validateArgsNReply(args, reply); err != nil {
+		return err
 	}
 
 	fileData, err := s.master.handleReadFile(args.Filename)
@@ -35,6 +42,18 @@ func (s *MasterService) ReadFile(args *protocol.ReadFileArgs, reply *protocol.Re
 
 	reply.Filename = args.Filename
 	reply.Data = fileData
+
+	return nil
+}
+
+func (s *MasterService) HeartBeat(args *protocol.HeartBeatArgs, reply *protocol.HeartBeatReply) error {
+	if err := validateArgsNReply(args, reply); err != nil {
+		return err
+	}
+
+	s.master.WorkerPoolLock.Lock()
+	s.master.WorkerPool[args.Address] = 1
+	s.master.WorkerPoolLock.Unlock()
 
 	return nil
 }
