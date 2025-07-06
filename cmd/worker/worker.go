@@ -6,7 +6,10 @@ import (
 )
 
 func StartWorker() {
-	coreWorker := worker.CreateWorker()
+	coreWorker, err := worker.CreateWorker()
+	if err != nil {
+		panic("Unable to create worker")
+	}
 
 	workerService := worker.CreateWorkerService(coreWorker)
 

@@ -43,3 +43,14 @@ func (master *Master) handleReadFile(filename string) ([]byte, error) {
 
 	return []byte{0, 1, 2, 3, 4, 5}, nil
 }
+
+func (master *Master) handleWriteFileRequest(filename string) ([]byte, error) {
+	// return the worker url to write to the file
+
+	for key, _ := range master.WorkerPool {
+		return []byte(key), nil
+	}
+
+	logger.Error(common.COMPONENT_MASTER, "Error while handling WriteFile: ", "No Workers Available")
+	return nil, fmt.Errorf("No Workers Available")
+}

@@ -44,3 +44,25 @@ func (client *Client) Read(filename string) {
 
 	logger.Info(common.COMPONENT_CLIENT, "Response: ", "Data", reply.Data)
 }
+
+func (client *Client) Write(filename, data string) {
+	requestArgs := &protocol.WriteFileRequestArgs{Filename: filename}
+	requestReply := &protocol.WriteFileRequestReply{}
+
+	err := transport.DialRpcCall(client.MasterAddress, "MasterService.WriteFile", requestArgs, requestReply)
+	if err != nil {
+		logger.Error(common.COMPONENT_CLIENT, "Error while performing WriteFile on master", err)
+	}
+
+	logger.Info(common.COMPONENT_CLIENT, "Response: ", "WorkerUrl", requestReply.WorkerUrl)
+
+	args := &protocol.WriteFileArgs{Filename: filename, Data: []byte(data)}
+	reply := &protocol.WriteFileReply{}
+
+	err = transport.DialRpcCall(client.MasterAddress, "WorkerService.WriteFile", args, reply)
+	if err != nil {
+		logger.Error(common.COMPONENT_CLIENT, "Error while performing WriteFile on worker", err)
+	}
+
+	logger.Info(common.COMPONENT_CLIENT, "Response: Successfully wrote to Worker")
+}

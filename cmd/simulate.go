@@ -20,7 +20,10 @@ func StartMaster() {
 }
 
 func StartWorker() {
-	coreWorker := worker.CreateWorker()
+	coreWorker, err := worker.CreateWorker()
+	if err != nil {
+		panic("Unable to create worker")
+	}
 
 	workerService := worker.CreateWorkerService(coreWorker)
 
@@ -40,6 +43,7 @@ func main() {
 
 	tc := client.CreateClient()
 	tc.Read("test.txt")
+	tc.Write("test.txt", "This is the data that is to be written to the file")
 
 	select {}
 }

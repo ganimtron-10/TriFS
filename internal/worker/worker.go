@@ -1,6 +1,9 @@
 package worker
 
 import (
+	"fmt"
+	"os"
+	"path"
 	"time"
 
 	"github.com/ganimtron-10/TriFS/internal/common"
@@ -31,7 +34,7 @@ func (w *Worker) SendHeartBeat() {
 	transport.DialRpcCall(w.MasterAddress, "MasterService.HeartBeat", &protocol.HeartBeatArgs{Address: w.Address}, &protocol.HeartBeatReply{})
 }
 
-func CreateWorker() *Worker {
+func CreateWorker() (*Worker, error) {
 	logger.Info(common.COMPONENT_WORKER, "Creating Worker...")
 
 	worker := &Worker{
@@ -48,10 +51,25 @@ func CreateWorker() *Worker {
 		}
 	}()
 
-	return worker
+	if err := os.Mkdir(worker.Address, 0755); err != nil {
+		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Unable to create directory named %s", worker.Address))
+		return nil, fmt.Errorf("Unable to initialize worker")
+	}
+
+	return worker, nil
 }
 
 func (w *Worker) AddConfig(config *WorkerConfig) *Worker {
 	w.WorkerConfig = config
 	return w
+}
+
+func (worker *Worker) handleWriteFile(filename string, data []byte) error {
+
+	if err := os.WriteFile(path.Join(worker.Address, filename), data, 0755); err != nil {
+		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Error while WriteFile: %s", err))
+		return err
+	}
+
+	return nil
 }
