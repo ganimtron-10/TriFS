@@ -31,13 +31,14 @@ func RegisterServices(services []interface{}) {
 	}
 }
 
-func StartRpcServer(address string, services ...interface{}) (*rpc.Client, error) {
+func StartRpcServer(address string, services ...interface{}) error {
 
 	RegisterServices(services)
 
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
-		logger.Error(common.COMPONENT_COMMON, fmt.Sprint("Error creating listener", err))
+		logger.Error(common.COMPONENT_COMMON, fmt.Sprintf("Unable to create listener with address %s. Error: %s", address, err))
+		return fmt.Errorf("unable to create listener")
 	}
 	defer listener.Close()
 
@@ -45,7 +46,7 @@ func StartRpcServer(address string, services ...interface{}) (*rpc.Client, error
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			logger.Error(common.COMPONENT_COMMON, fmt.Sprint("Error accepting connection: ", err))
+			logger.Error(common.COMPONENT_COMMON, fmt.Sprintf("Unable to accept connection. Error: %s", err))
 			continue
 		}
 
@@ -56,7 +57,7 @@ func StartRpcServer(address string, services ...interface{}) (*rpc.Client, error
 func GetAddressWithRandomPort() string {
 	listener, err := net.Listen("tcp", ":0")
 	if err != nil {
-		logger.Error(common.COMPONENT_COMMON, fmt.Sprint("Error creating listner: ", err))
+		logger.Error(common.COMPONENT_COMMON, fmt.Sprintf("Unable to creating listener. Error: %s", err))
 	}
 	defer listener.Close()
 

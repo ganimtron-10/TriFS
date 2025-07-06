@@ -53,7 +53,7 @@ func CreateWorker() (*Worker, error) {
 
 	if err := os.Mkdir(worker.Address, 0755); err != nil {
 		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Unable to create directory named %s", worker.Address))
-		return nil, fmt.Errorf("Unable to initialize worker")
+		return nil, fmt.Errorf("unable to initialize worker")
 	}
 
 	return worker, nil
@@ -66,8 +66,9 @@ func (w *Worker) AddConfig(config *WorkerConfig) *Worker {
 
 func (worker *Worker) handleWriteFile(filename string, data []byte) error {
 
-	if err := os.WriteFile(path.Join(worker.Address, filename), data, 0755); err != nil {
-		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Error while WriteFile: %s", err))
+	fullFilePath := path.Join(worker.Address, filename)
+	if err := os.WriteFile(fullFilePath, data, 0755); err != nil {
+		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Error while writing to file named %s. Error: %s", fullFilePath, err))
 		return err
 	}
 

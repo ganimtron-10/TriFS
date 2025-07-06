@@ -1,6 +1,8 @@
 package worker
 
 import (
+	"fmt"
+
 	"github.com/ganimtron-10/TriFS/internal/common"
 	"github.com/ganimtron-10/TriFS/internal/logger"
 	"github.com/ganimtron-10/TriFS/internal/protocol"
@@ -24,7 +26,7 @@ func (s *WorkerService) WriteFile(args *protocol.WriteFileArgs, reply *protocol.
 
 	err := s.worker.handleWriteFile(args.Filename, args.Data)
 	if err != nil {
-		logger.Error(common.COMPONENT_WORKER, "Error while writing data to file")
+		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Error while handling WriteFile %s", err))
 		return err
 	}
 

@@ -1,6 +1,8 @@
 package client
 
 import (
+	"fmt"
+
 	"github.com/ganimtron-10/TriFS/internal/common"
 	"github.com/ganimtron-10/TriFS/internal/logger"
 	"github.com/ganimtron-10/TriFS/internal/protocol"
@@ -39,10 +41,10 @@ func (client *Client) Read(filename string) {
 
 	err := transport.DialRpcCall(client.MasterAddress, "MasterService.ReadFile", args, reply)
 	if err != nil {
-		logger.Error(common.COMPONENT_CLIENT, "Error while performing ReadFile", err)
+		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Master ReadFile Error: %s", err))
 	}
 
-	logger.Info(common.COMPONENT_CLIENT, "Response: ", "Data", reply.Data)
+	logger.Info(common.COMPONENT_CLIENT, "Master ReadFile Response", "Data", reply.Data)
 }
 
 func (client *Client) Write(filename, data string) {
@@ -51,18 +53,18 @@ func (client *Client) Write(filename, data string) {
 
 	err := transport.DialRpcCall(client.MasterAddress, "MasterService.WriteFile", requestArgs, requestReply)
 	if err != nil {
-		logger.Error(common.COMPONENT_CLIENT, "Error while performing WriteFile on master", err)
+		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Master WriteFile Error: %s", err))
 	}
 
-	logger.Info(common.COMPONENT_CLIENT, "Response: ", "WorkerUrl", requestReply.WorkerUrl)
+	logger.Info(common.COMPONENT_CLIENT, "Master WriteFile Response", "WorkerUrl", requestReply.WorkerUrl)
 
 	args := &protocol.WriteFileArgs{Filename: filename, Data: []byte(data)}
 	reply := &protocol.WriteFileReply{}
 
 	err = transport.DialRpcCall(client.MasterAddress, "WorkerService.WriteFile", args, reply)
 	if err != nil {
-		logger.Error(common.COMPONENT_CLIENT, "Error while performing WriteFile on worker", err)
+		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Worker WriteFile Error: %s", err))
 	}
 
-	logger.Info(common.COMPONENT_CLIENT, "Response: Successfully wrote to Worker")
+	logger.Info(common.COMPONENT_CLIENT, "Worker Successfully Wrote File")
 }
