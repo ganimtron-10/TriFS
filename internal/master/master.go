@@ -9,26 +9,26 @@ import (
 )
 
 type MasterConfig struct {
-	Port           int
-	WorkerPool     map[string]int
-	WorkerPoolLock sync.RWMutex
+	Port int
 }
 
 type Master struct {
 	*MasterConfig
+	WorkerPool     map[string]int
+	WorkerPoolLock sync.RWMutex
 }
 
 func getDefaultMasterConfig() *MasterConfig {
 	return &MasterConfig{
-		Port:       common.DEFAULT_MASTER_PORT,
-		WorkerPool: make(map[string]int),
+		Port: common.DEFAULT_MASTER_PORT,
 	}
 }
 
 func CreateMaster() *Master {
 	logger.Info(common.COMPONENT_MASTER, "Creating Master...")
 	return &Master{
-		getDefaultMasterConfig(),
+		MasterConfig: getDefaultMasterConfig(),
+		WorkerPool:   make(map[string]int),
 	}
 }
 
