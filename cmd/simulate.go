@@ -25,6 +25,7 @@ func StartWorker() {
 	workerService := worker.CreateWorkerService(coreWorker)
 
 	transport.StartRpcServer(coreWorker.Address, workerService)
+
 }
 
 func main() {
@@ -32,9 +33,13 @@ func main() {
 	go StartMaster()
 
 	go StartWorker()
+	go StartWorker()
+	go StartWorker()
 
-	time.Sleep(time.Second * 5)
+	time.Sleep(time.Second * 20)
 
 	tc := client.CreateClient()
 	tc.Read("test.txt")
+
+	select {}
 }
