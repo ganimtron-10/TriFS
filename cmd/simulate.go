@@ -1,11 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/ganimtron-10/TriFS/internal/client"
 	"github.com/ganimtron-10/TriFS/internal/master"
 	"github.com/ganimtron-10/TriFS/internal/transport"
+	"github.com/ganimtron-10/TriFS/internal/worker"
 )
 
 func StartMaster() {
@@ -13,13 +15,23 @@ func StartMaster() {
 
 	masterService := master.CreateMasterService(coreMaster)
 
-	transport.StartRpcServer(coreMaster.Port, masterService)
+	transport.StartRpcServer(fmt.Sprintf(":%d", coreMaster.Port), masterService)
 
+}
+
+func StartWorker() {
+	coreWorker := worker.CreateWorker()
+
+	workerService := worker.CreateWorkerService(coreWorker)
+
+	transport.StartRpcServer(coreWorker.Address, workerService)
 }
 
 func main() {
 
 	go StartMaster()
+
+	go StartWorker()
 
 	time.Sleep(time.Second * 5)
 
