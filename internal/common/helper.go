@@ -1,12 +1,15 @@
 package common
 
-import "fmt"
+import (
+	"fmt"
+	"reflect"
+)
 
 func ValidateArgsNReply(args, reply any) error {
-	if args == nil {
+	if args == nil || reflect.ValueOf(args).IsNil() {
 		return fmt.Errorf("rpc args is empty")
 	}
-	if reply == nil {
+	if reply == nil || reflect.ValueOf(reply).IsNil() {
 		return fmt.Errorf("rpc reply is empty")
 	}
 
