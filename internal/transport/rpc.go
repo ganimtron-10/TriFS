@@ -45,7 +45,7 @@ func StartRpcServer(address string, services ...interface{}) (*rpc.Client, error
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			logger.Error(common.COMPONENT_COMMON, fmt.Sprint("Error accepting connection", err))
+			logger.Error(common.COMPONENT_COMMON, fmt.Sprint("Error accepting connection: ", err))
 			continue
 		}
 
@@ -54,9 +54,9 @@ func StartRpcServer(address string, services ...interface{}) (*rpc.Client, error
 }
 
 func GetAddressWithRandomPort() string {
-	listener, err := net.Listen("tcp", "0")
+	listener, err := net.Listen("tcp", ":0")
 	if err != nil {
-		logger.Error(common.COMPONENT_COMMON, fmt.Sprint("Error creating listner", err))
+		logger.Error(common.COMPONENT_COMMON, fmt.Sprint("Error creating listner: ", err))
 	}
 	defer listener.Close()
 
