@@ -1,6 +1,8 @@
 package worker
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"path"
@@ -18,8 +20,14 @@ type WorkerConfig struct {
 	HeartbeatInterval int
 }
 
+type FileInfo struct {
+	PackId string
+	Offset int
+}
+
 type Worker struct {
 	*WorkerConfig
+	fileStore map[string]*FileInfo
 }
 
 func getDefaultWorkerConfig() *WorkerConfig {
@@ -38,7 +46,8 @@ func CreateWorker() (*Worker, error) {
 	logger.Info(common.COMPONENT_WORKER, "Creating Worker...")
 
 	worker := &Worker{
-		getDefaultWorkerConfig(),
+		WorkerConfig: getDefaultWorkerConfig(),
+		fileStore:    make(map[string]*FileInfo),
 	}
 
 	ticker := time.NewTicker(time.Second * time.Duration(worker.HeartbeatInterval))
@@ -64,7 +73,20 @@ func (w *Worker) AddConfig(config *WorkerConfig) *Worker {
 	return w
 }
 
+func hash(input string) string {
+	hasher := sha256.New()
+	hasher.Write([]byte(input))
+	return hex.EncodeToString(hasher.Sum(nil))
+}
+
 func (worker *Worker) handleWriteFile(filename string, data []byte) error {
+
+	filenameHash := hash(filename)
+	// TODO: Add Pack Creation and Handling Logic
+	worker.fileStore[filenameHash] = &FileInfo{
+		PackId: filenameHash,
+		Offset: 0,
+	}
 
 	fullFilePath := path.Join(worker.Address, filename)
 	if err := os.WriteFile(fullFilePath, data, 0755); err != nil {
