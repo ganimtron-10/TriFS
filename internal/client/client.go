@@ -35,16 +35,29 @@ func (client *Client) AddConfig(config *ClientConfig) *Client {
 	return client
 }
 
-func (client *Client) Read(filename string) {
+func (client *Client) Read(filename string) error {
+	requestArgs := &protocol.ReadFileRequestArgs{Filename: filename}
+	requestReply := &protocol.ReadFileRequestReply{}
+
+	err := transport.DialRpcCall(client.MasterAddress, "MasterService.ReadFile", requestArgs, requestReply)
+	if err != nil {
+		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Master ReadFile Error: %s", err))
+		return err
+	}
+
+	logger.Info(common.COMPONENT_CLIENT, "Master ReadFile Response", "WorkerUrls", requestReply.WorkerUrls)
+
 	args := &protocol.ReadFileArgs{Filename: filename}
 	reply := &protocol.ReadFileReply{}
 
-	err := transport.DialRpcCall(client.MasterAddress, "MasterService.ReadFile", args, reply)
+	err = transport.DialRpcCall(requestReply.WorkerUrls[0], "WorkerService.ReadFile", args, reply)
 	if err != nil {
-		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Master ReadFile Error: %s", err))
+		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Worker ReadFile Error: %s", err))
+		return err
 	}
 
-	logger.Info(common.COMPONENT_CLIENT, "Master ReadFile Response", "Data", reply.Data)
+	logger.Info(common.COMPONENT_CLIENT, "Worker ReadFile Response", "Data", string(reply.Data))
+	return nil
 }
 
 func (client *Client) Write(filename, data string) {
