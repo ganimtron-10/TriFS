@@ -19,6 +19,22 @@ func CreateWorkerService(worker *Worker) *WorkerService {
 	}
 }
 
+func (s *WorkerService) ReadFile(args *protocol.ReadFileArgs, reply *protocol.ReadFileReply) error {
+	if err := common.ValidateArgsNReply(args, reply); err != nil {
+		return err
+	}
+
+	fileData, err := s.worker.handleReadFile(args.Filename)
+	if err != nil {
+		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Error while handling ReadFile. Error: %s", err))
+		return err
+	}
+	reply.Filename = args.Filename
+	reply.Data = fileData
+
+	return nil
+}
+
 func (s *WorkerService) WriteFile(args *protocol.WriteFileArgs, reply *protocol.WriteFileReply) error {
 	if err := common.ValidateArgsNReply(args, reply); err != nil {
 		return err
@@ -26,7 +42,7 @@ func (s *WorkerService) WriteFile(args *protocol.WriteFileArgs, reply *protocol.
 
 	err := s.worker.handleWriteFile(args.Filename, args.Data)
 	if err != nil {
-		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Error while handling WriteFile %s", err))
+		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Error while handling WriteFile. Error: %s", err))
 		return err
 	}
 

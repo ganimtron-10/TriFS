@@ -5,6 +5,7 @@ import (
 	"path"
 	"testing"
 
+	"github.com/ganimtron-10/TriFS/internal/common"
 	"github.com/ganimtron-10/TriFS/internal/protocol"
 	"github.com/stretchr/testify/assert"
 )
@@ -44,7 +45,7 @@ func TestWorkerService_WriteFile_Success(t *testing.T) {
 	assert.NoError(t, err, "Should be able to read the file from disk")
 	assert.Equal(t, data, readData, "Content of the file on disk should match original data")
 
-	filenameHash := hash(filename)
+	filenameHash := common.Hash(filename)
 	fileInfoEntry, exists := worker.fileStore[filenameHash]
 	assert.True(t, exists, "File info should be added to fileStore")
 	assert.NotNil(t, fileInfoEntry, "FileInfo entry should not be nil in fileStore")
