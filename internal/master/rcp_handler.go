@@ -38,9 +38,8 @@ func (s *MasterService) HeartBeat(args *protocol.HeartBeatArgs, reply *protocol.
 		return err
 	}
 
-	s.master.WorkerPoolLock.Lock()
-	s.master.WorkerPool[args.Address] = 1
-	s.master.WorkerPoolLock.Unlock()
+	// TODO: Check later whether function needs to return anything
+	s.master.handleHeartbeat(args.Address, args.FileHashes)
 
 	return nil
 }
