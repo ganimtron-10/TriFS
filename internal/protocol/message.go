@@ -30,7 +30,7 @@ type WriteFileRequestArgs struct {
 }
 
 type WriteFileRequestReply struct {
-	WorkerUrl string
+	WorkerUrls []string
 }
 
 type WriteFileArgs struct {

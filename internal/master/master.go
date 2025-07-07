@@ -69,34 +69,37 @@ func (master *Master) handleReadFile(filename string) ([]string, error) {
 	return getList(fileWorkerSet), nil
 }
 
-func (master *Master) chooseWorker() (string, error) {
+func (master *Master) chooseWorker() ([]string, error) {
 	// choose a worker for writing file
 
 	workerCount := len(master.WorkerPool)
 	if workerCount == 0 {
-		return "", fmt.Errorf("no worker available")
+		return []string{}, fmt.Errorf("no worker available")
 	}
 
 	workers := make([]string, 0, workerCount)
 	for worker := range master.WorkerPool {
 		workers = append(workers, worker)
 	}
-	return workers[rand.Intn(workerCount)], nil
+
+	index := rand.Intn(workerCount)
+	workers[0], workers[index] = workers[index], workers[0]
+	return workers, nil
 }
 
-func (master *Master) handleWriteFileRequest(filename string) ([]byte, error) {
+func (master *Master) handleWriteFileRequest(filename string) ([]string, error) {
 	// choose and return the worker url to write to the file
 
 	master.WorkerPoolLock.Lock()
 	defer master.WorkerPoolLock.Unlock()
 
-	worker, err := master.chooseWorker()
+	workerList, err := master.chooseWorker()
 	if err != nil {
 		logger.Error(common.COMPONENT_MASTER, "No Worker in WorkerPool")
 		return nil, err
 	}
 
-	return []byte(worker), nil
+	return workerList, nil
 }
 
 func (master *Master) updateFileHashWorkerMap(workerUrl string, prevFileHashes, curFileHashes map[string]struct{}) {

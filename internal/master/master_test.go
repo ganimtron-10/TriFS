@@ -99,7 +99,7 @@ func TestMaster_HandleWriteFileRequest_OneWorker(t *testing.T) {
 
 	assert.NoError(t, err, "handleWriteFileRequest should not return an error when workers are available")
 
-	expectedWorkerURL := []byte("worker-1:9000")
+	expectedWorkerURL := []string{"worker-1:9000"}
 	assert.Equal(t, expectedWorkerURL, workerURL, "Returned worker URL should match the single worker in the pool")
 
 }
@@ -115,12 +115,12 @@ func TestMaster_HandleWriteFileRequest_MultipleWorkers(t *testing.T) {
 	master.WorkerPoolLock.Unlock()
 
 	filename := "multi_worker_file.txt"
-	workerURL, err := master.handleWriteFileRequest(filename)
+	workerUrls, err := master.handleWriteFileRequest(filename)
 
 	assert.NoError(t, err, "handleWriteFileRequest should not return an error when multiple workers are available")
 
 	expectedWorkers := []string{"worker-A:9000", "worker-B:9001", "worker-C:9002"}
-	returnedWorkerStr := string(workerURL)
-	assert.Contains(t, expectedWorkers, returnedWorkerStr, "Returned worker URL should be one of the added workers")
+
+	assert.ElementsMatch(t, expectedWorkers, workerUrls, "Returned worker URL should be one of the added workers")
 
 }

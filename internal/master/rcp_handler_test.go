@@ -120,10 +120,10 @@ func TestMasterService_WriteFile_Success(t *testing.T) {
 	master, service := createTestMasterAndService()
 
 	filename := "testfile_write.txt"
-	expectedWorkerURL := []byte("mock-worker-for-write:9001")
+	expectedWorkerList := []string{"worker-A:9000"}
 
 	master.WorkerPoolLock.Lock()
-	master.WorkerPool[string(expectedWorkerURL)] = &WorkerInfo{}
+	master.WorkerPool[expectedWorkerList[0]] = &WorkerInfo{}
 	master.WorkerPoolLock.Unlock()
 
 	args := &protocol.WriteFileRequestArgs{Filename: filename}
@@ -132,7 +132,7 @@ func TestMasterService_WriteFile_Success(t *testing.T) {
 	err := service.WriteFile(args, reply)
 
 	assert.NoError(t, err, "WriteFile should not return an error on success")
-	assert.Equal(t, string(expectedWorkerURL), reply.WorkerUrl, "Reply WorkerUrl should match expected from handleWriteFileRequest")
+	assert.Equal(t, expectedWorkerList, reply.WorkerUrls, "Reply WorkerUrl should match expected from handleWriteFileRequest")
 }
 
 func TestMasterService_WriteFile_ValidationNilArgs(t *testing.T) {
@@ -170,5 +170,5 @@ func TestMasterService_WriteFile_NoWorkersError(t *testing.T) {
 
 	assert.Error(t, err, "WriteFile should return an error when handleWriteFileRequest fails due to no workers")
 	assert.EqualError(t, err, "no worker available", "Error message should match expected from handleWriteFileRequest")
-	assert.Empty(t, reply.WorkerUrl, "Reply WorkerUrl should be empty on error")
+	assert.Empty(t, reply.WorkerUrls, "Reply WorkerUrl should be empty on error")
 }

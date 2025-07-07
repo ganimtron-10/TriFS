@@ -69,12 +69,12 @@ func (client *Client) Write(filename, data string) {
 		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Master WriteFile Error: %s", err))
 	}
 
-	logger.Info(common.COMPONENT_CLIENT, "Master WriteFile Response", "WorkerUrl", requestReply.WorkerUrl)
+	logger.Info(common.COMPONENT_CLIENT, "Master WriteFile Response", "WorkerUrl", requestReply.WorkerUrls)
 
 	args := &protocol.WriteFileArgs{Filename: filename, Data: []byte(data)}
 	reply := &protocol.WriteFileReply{}
 
-	err = transport.DialRpcCall(client.MasterAddress, "WorkerService.WriteFile", args, reply)
+	err = transport.DialRpcCall(requestReply.WorkerUrls[0], "WorkerService.WriteFile", args, reply)
 	if err != nil {
 		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Worker WriteFile Error: %s", err))
 	}

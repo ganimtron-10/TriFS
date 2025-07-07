@@ -48,12 +48,12 @@ func (s *MasterService) WriteFile(args *protocol.WriteFileRequestArgs, reply *pr
 		return err
 	}
 
-	workerData, err := s.master.handleWriteFileRequest(args.Filename)
+	workerUrls, err := s.master.handleWriteFileRequest(args.Filename)
 	if err != nil {
 		return err
 	}
 
-	reply.WorkerUrl = string(workerData)
+	reply.WorkerUrls = workerUrls
 
 	return nil
 }
