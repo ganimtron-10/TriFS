@@ -4,13 +4,17 @@ import (
 	"fmt"
 	"net"
 	"net/rpc"
+	"strings"
 
 	"github.com/ganimtron-10/TriFS/internal/common"
 	"github.com/ganimtron-10/TriFS/internal/logger"
 )
 
 func DialRpcCall(address string, rpcServiceName string, rpcRequest any, rpcResponse any) error {
-	logger.Info(common.COMPONENT_COMMON, fmt.Sprintf("Dialing RPC Call to %s", rpcServiceName))
+	if !strings.Contains(rpcServiceName, "HeartBeat") {
+		logger.Info(common.COMPONENT_COMMON, fmt.Sprintf("Dialing RPC Call to %s", rpcServiceName))
+	}
+
 	rpcClient, err := rpc.Dial("tcp", address)
 	if err != nil {
 		return err
