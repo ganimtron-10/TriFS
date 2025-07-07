@@ -19,6 +19,7 @@ func DialRpcCall(address string, rpcServiceName string, rpcRequest any, rpcRespo
 	if err != nil {
 		return err
 	}
+	defer rpcClient.Close()
 
 	err = rpcClient.Call(rpcServiceName, rpcRequest, rpcResponse)
 	if err != nil {
