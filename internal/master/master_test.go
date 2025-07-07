@@ -44,12 +44,32 @@ func TestMaster_HandleReadFile_Success(t *testing.T) {
 	master := CreateMaster()
 
 	filename := "testfile.txt"
+
+	master.WorkerPoolLock.Lock()
+	master.WorkerPool["worker-A:9000"] = &WorkerInfo{}
+	master.WorkerPoolLock.Unlock()
+
+	master.FileHashWorkerMapLock.Lock()
+	master.FileHashWorkerMap[common.Hash(filename)] = FileWorkerSet{"worker-A:9000": true}
+	master.FileHashWorkerMapLock.Unlock()
+
 	data, err := master.handleReadFile(filename)
 
 	assert.NoError(t, err, "handleReadFile should not return an error on success")
 
-	expectedData := []byte{0, 1, 2, 3, 4, 5}
+	expectedData := []string{"worker-A:9000"}
 	assert.Equal(t, expectedData, data, "Returned data should match expected bytes")
+}
+
+func TestMaster_HandleReadFile_FileNotFound(t *testing.T) {
+	master := CreateMaster()
+
+	filename := "testfile.txt"
+
+	_, err := master.handleReadFile(filename)
+
+	assert.Error(t, err, "handleReadFile should return an error on failure")
+	assert.EqualError(t, err, "file not found", "Error message should match expected")
 }
 
 func TestMaster_HandleWriteFileRequest_NoWorkers(t *testing.T) {
@@ -60,7 +80,7 @@ func TestMaster_HandleWriteFileRequest_NoWorkers(t *testing.T) {
 	workerURL, err := master.handleWriteFileRequest(filename)
 
 	assert.Error(t, err, "handleWriteFileRequest should return an error when no workers are available")
-	assert.EqualError(t, err, "worker not available. please try later", "Error message should match expected")
+	assert.EqualError(t, err, "no worker available", "Error message should match expected")
 
 	assert.Nil(t, workerURL, "WorkerURL should be nil when no workers are available")
 
@@ -71,7 +91,7 @@ func TestMaster_HandleWriteFileRequest_OneWorker(t *testing.T) {
 	master := CreateMaster()
 
 	master.WorkerPoolLock.Lock()
-	master.WorkerPool["worker-1:9000"] = 1
+	master.WorkerPool["worker-1:9000"] = &WorkerInfo{}
 	master.WorkerPoolLock.Unlock()
 
 	filename := "anotherfile.txt"
@@ -89,9 +109,9 @@ func TestMaster_HandleWriteFileRequest_MultipleWorkers(t *testing.T) {
 	master := CreateMaster()
 
 	master.WorkerPoolLock.Lock()
-	master.WorkerPool["worker-A:9000"] = 1
-	master.WorkerPool["worker-B:9001"] = 2
-	master.WorkerPool["worker-C:9002"] = 3
+	master.WorkerPool["worker-A:9000"] = &WorkerInfo{}
+	master.WorkerPool["worker-B:9001"] = &WorkerInfo{}
+	master.WorkerPool["worker-C:9002"] = &WorkerInfo{}
 	master.WorkerPoolLock.Unlock()
 
 	filename := "multi_worker_file.txt"

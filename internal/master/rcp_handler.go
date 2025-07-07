@@ -17,18 +17,17 @@ func CreateMasterService(master *Master) *MasterService {
 	}
 }
 
-func (s *MasterService) ReadFile(args *protocol.ReadFileArgs, reply *protocol.ReadFileReply) error {
+func (s *MasterService) ReadFile(args *protocol.ReadFileRequestArgs, reply *protocol.ReadFileRequestReply) error {
 	if err := common.ValidateArgsNReply(args, reply); err != nil {
 		return err
 	}
 
-	fileData, err := s.master.handleReadFile(args.Filename)
+	workerUrls, err := s.master.handleReadFile(args.Filename)
 	if err != nil {
 		return err
 	}
 
-	reply.Filename = args.Filename
-	reply.Data = fileData
+	reply.WorkerUrls = workerUrls
 
 	return nil
 }

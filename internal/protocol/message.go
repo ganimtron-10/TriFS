@@ -1,5 +1,13 @@
 package protocol
 
+type ReadFileRequestArgs struct {
+	Filename string
+}
+
+type ReadFileRequestReply struct {
+	WorkerUrls []string
+}
+
 type ReadFileArgs struct {
 	Filename string
 }
@@ -10,7 +18,8 @@ type ReadFileReply struct {
 }
 
 type HeartBeatArgs struct {
-	Address string
+	Address    string
+	FileHashes map[string]struct{}
 }
 
 type HeartBeatReply struct {
@@ -30,5 +39,4 @@ type WriteFileArgs struct {
 }
 
 type WriteFileReply struct {
-	WorkerUrl string
 }

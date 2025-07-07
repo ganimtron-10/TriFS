@@ -55,19 +55,48 @@ func (master *Master) AddConfig(config *MasterConfig) *Master {
 	return master
 }
 
-func (master *Master) handleReadFile(filename string) ([]byte, error) {
+func (master *Master) handleReadFile(filename string) ([]string, error) {
 	// return the worker url to access the file
-	fmt.Println(master.WorkerPool)
-	
-		return []byte{0, 1, 2, 3, 4, 5}, nil
+	master.FileHashWorkerMapLock.RLock()
+	defer master.FileHashWorkerMapLock.RUnlock()
+
+	fileWorkerSet, ok := master.FileHashWorkerMap[common.Hash(filename)]
+
+	if !ok {
+		return nil, fmt.Errorf("file not found")
+	}
+
+	return getList(fileWorkerSet), nil
+}
+
+func (master *Master) chooseWorker() (string, error) {
+	// choose a worker for writing file
+
+	workerCount := len(master.WorkerPool)
+	if workerCount == 0 {
+		return "", fmt.Errorf("no worker available")
+	}
+
+	workers := make([]string, 0, workerCount)
+	for worker := range master.WorkerPool {
+		workers = append(workers, worker)
+	}
+	return workers[rand.Intn(workerCount)], nil
 }
 
 func (master *Master) handleWriteFileRequest(filename string) ([]byte, error) {
 	// choose and return the worker url to write to the file
 
-	master.WorkerPoolLock.RLock()
-	for key := range master.WorkerPool {
-	return []byte(key), nil
+	master.WorkerPoolLock.Lock()
+	defer master.WorkerPoolLock.Unlock()
+
+	worker, err := master.chooseWorker()
+	if err != nil {
+		logger.Error(common.COMPONENT_MASTER, "No Worker in WorkerPool")
+		return nil, err
+	}
+
+	return []byte(worker), nil
 }
 
 func (master *Master) updateFileHashWorkerMap(workerUrl string, prevFileHashes, curFileHashes map[string]struct{}) {

@@ -3,6 +3,7 @@ package master
 import (
 	"testing"
 
+	"github.com/ganimtron-10/TriFS/internal/common"
 	"github.com/ganimtron-10/TriFS/internal/protocol"
 	"github.com/stretchr/testify/assert"
 )
@@ -23,23 +24,42 @@ func TestCreateMasterService(t *testing.T) {
 }
 
 func TestMasterService_ReadFile_Success(t *testing.T) {
-	_, service := createTestMasterAndService()
+	master, service := createTestMasterAndService()
 
 	filename := "testfile_read.txt"
-	args := &protocol.ReadFileArgs{Filename: filename}
-	reply := &protocol.ReadFileReply{}
+
+	master.FileHashWorkerMapLock.Lock()
+	master.FileHashWorkerMap[common.Hash(filename)] = FileWorkerSet{"worker-A:9000": true}
+	master.FileHashWorkerMapLock.Unlock()
+
+	args := &protocol.ReadFileRequestArgs{Filename: filename}
+	reply := &protocol.ReadFileRequestReply{}
 
 	err := service.ReadFile(args, reply)
 
 	assert.NoError(t, err, "ReadFile should not return an error on success")
-	assert.Equal(t, filename, reply.Filename, "Reply filename should match request filename")
-	assert.Equal(t, []byte{0, 1, 2, 3, 4, 5}, reply.Data, "Reply data should match expected data from handleReadFile")
+
+	expectedData := []string{"worker-A:9000"}
+	assert.Equal(t, expectedData, reply.WorkerUrls, "Reply data should match expected data from handleReadFile")
+}
+
+func TestMasterService_ReadFile_Failure(t *testing.T) {
+	_, service := createTestMasterAndService()
+
+	filename := "testfile_read.txt"
+	args := &protocol.ReadFileRequestArgs{Filename: filename}
+	reply := &protocol.ReadFileRequestReply{}
+
+	err := service.ReadFile(args, reply)
+
+	assert.Error(t, err, "ReadFile should return an error on failure")
+	assert.EqualError(t, err, "file not found", "Error message should match expected")
 }
 
 func TestMasterService_ReadFile_ValidationNilArgs(t *testing.T) {
 	_, service := createTestMasterAndService()
 
-	reply := &protocol.ReadFileReply{}
+	reply := &protocol.ReadFileRequestReply{}
 	err := service.ReadFile(nil, reply)
 
 	assert.Error(t, err, "ReadFile should return an error when args is nil")
@@ -49,7 +69,7 @@ func TestMasterService_ReadFile_ValidationNilArgs(t *testing.T) {
 func TestMasterService_ReadFile_ValidationNilReply(t *testing.T) {
 	_, service := createTestMasterAndService()
 
-	args := &protocol.ReadFileArgs{Filename: "test.txt"}
+	args := &protocol.ReadFileRequestArgs{Filename: "test.txt"}
 	err := service.ReadFile(args, nil)
 
 	assert.Error(t, err, "ReadFile should return an error when reply is nil")
@@ -103,7 +123,7 @@ func TestMasterService_WriteFile_Success(t *testing.T) {
 	expectedWorkerURL := []byte("mock-worker-for-write:9001")
 
 	master.WorkerPoolLock.Lock()
-	master.WorkerPool[string(expectedWorkerURL)] = 1
+	master.WorkerPool[string(expectedWorkerURL)] = &WorkerInfo{}
 	master.WorkerPoolLock.Unlock()
 
 	args := &protocol.WriteFileRequestArgs{Filename: filename}
@@ -139,7 +159,7 @@ func TestMasterService_WriteFile_NoWorkersError(t *testing.T) {
 	master, service := createTestMasterAndService()
 
 	master.WorkerPoolLock.Lock()
-	master.WorkerPool = make(map[string]int)
+	master.WorkerPool = make(map[string]*WorkerInfo)
 	master.WorkerPoolLock.Unlock()
 
 	filename := "testfile_write_no_worker.txt"
@@ -149,6 +169,6 @@ func TestMasterService_WriteFile_NoWorkersError(t *testing.T) {
 	err := service.WriteFile(args, reply)
 
 	assert.Error(t, err, "WriteFile should return an error when handleWriteFileRequest fails due to no workers")
-	assert.EqualError(t, err, "worker not available. please try later", "Error message should match expected from handleWriteFileRequest")
+	assert.EqualError(t, err, "no worker available", "Error message should match expected from handleWriteFileRequest")
 	assert.Empty(t, reply.WorkerUrl, "Reply WorkerUrl should be empty on error")
 }
