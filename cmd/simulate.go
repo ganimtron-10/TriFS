@@ -3,70 +3,41 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/signal"
-	"syscall"
+	"os/exec"
 	"time"
 
-	"github.com/ganimtron-10/TriFS/internal/client"
 	"github.com/ganimtron-10/TriFS/internal/common"
 	"github.com/ganimtron-10/TriFS/internal/logger"
-	"github.com/ganimtron-10/TriFS/internal/master"
-	"github.com/ganimtron-10/TriFS/internal/transport"
-	"github.com/ganimtron-10/TriFS/internal/worker"
 )
 
-func StartMaster() {
-	coreMaster := master.CreateMaster()
+func spawn(spawnPath string) {
+	command := exec.Command("go", "run", spawnPath)
+	command.Stdout = os.Stdout
+	command.Stdin = os.Stdin
+	command.Stderr = os.Stderr
 
-	masterService := master.CreateMasterService(coreMaster)
-
-	transport.StartRpcServer(fmt.Sprintf(":%d", coreMaster.Port), masterService)
-
-}
-
-func StartWorker() {
-	coreWorker, err := worker.CreateWorker()
+	err := command.Start()
 	if err != nil {
-		panic("Unable to create worker")
+		logger.Error(common.COMPONENT_COMMON, fmt.Sprintf("Error while running %s", spawnPath))
 	}
-
-	workerService := worker.CreateWorkerService(coreWorker)
-
-	transport.StartRpcServer(coreWorker.Address, workerService)
-
 }
 
 func main() {
 
-	go StartMaster()
+	masterPath := "./cmd/master/main.go"
+	workerPath := "./cmd/worker/main.go"
+	clientPath := "./cmd/client/main.go"
 
-	go StartWorker()
-	go StartWorker()
-	go StartWorker()
-
-	time.Sleep(time.Second * 20)
-
-	tc := client.CreateClient()
-
-	tc.Read("test.txt")
-
-	tc.Write("test1.txt", "Test File 1")
-	time.Sleep(time.Second * 5)
-	tc.Write("test2.txt", "Test File 2")
-	time.Sleep(time.Second * 5)
-	tc.Write("test3.txt", "Test File 3")
-	time.Sleep(time.Second * 5)
-	tc.Write("test4.txt", "Test File 4")
+	spawn(masterPath)
 	time.Sleep(time.Second * 5)
 
-	tc.Read("test1.txt")
-	time.Sleep(time.Second * 5)
-	tc.Read("test3.txt")
+	for i := 0; i < 3; i++ {
+		spawn(workerPath)
+		time.Sleep(time.Second * 1)
+	}
 	time.Sleep(time.Second * 5)
 
-	// Wait for interrupt signal to gracefully shutdown
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-	<-sigChan
-	logger.Info(common.COMPONENT_COMMON, "Shutting down simulation...")
+	spawn(clientPath)
+	time.Sleep(time.Second * 5)
+
 }
