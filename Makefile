@@ -1,17 +1,19 @@
+.PHONY: default simulate master worker client build
+
 default: simulate
 
 simulate:
-	go run "./cmd/simulate.go"
+	go run ./cmd/simulate.go
 
 master:
-	go run "./cmd/master.go"
+	go run ./cmd/master
 
 worker:
-	go run "./cmd/worker.go"
+	go run ./cmd/worker
 
-client:
-	go run "./cmd/client.go"
+# client:
+# 	go run ./cmd/client
 
 build:
-	go build "./cmd/master.go" -o master
-	go build "./cmd/worker.go" -o worker
+	go build -o ./build/master ./cmd/master 
+	go build -o ./build/worker ./cmd/worker 
