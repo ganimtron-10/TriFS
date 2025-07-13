@@ -85,6 +85,11 @@ func (worker *Worker) handleReadFile(filename string) ([]byte, error) {
 
 	filenameHash := common.Hash(filename)
 	fileInfo := worker.fileStore[filenameHash]
+	if fileInfo == nil {
+		err := fmt.Errorf("fileinfo for file(%s) not found in worker filestore", filename)
+		logger.Error(common.COMPONENT_WORKER, err.Error())
+		return nil, err
+	}
 
 	fullFilePath := path.Join(worker.Address, filename)
 	file, err := os.Open(fullFilePath)
@@ -92,6 +97,7 @@ func (worker *Worker) handleReadFile(filename string) ([]byte, error) {
 		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Error while opening file named %s. Error: %s", fullFilePath, err))
 		return nil, err
 	}
+	defer file.Close()
 
 	_, err = file.Seek(int64(fileInfo.Offset), io.SeekStart)
 	if err != nil {
