@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"sync"
 	"time"
 
 	"github.com/ganimtron-10/TriFS/internal/common"
@@ -27,7 +28,8 @@ type FileInfo struct {
 
 type Worker struct {
 	*WorkerConfig
-	fileStore map[string]*FileInfo
+	fileStore     map[string]*FileInfo
+	fileStoreLock sync.RWMutex
 }
 
 func getDefaultWorkerConfig() *WorkerConfig {
@@ -47,6 +49,9 @@ func getFileHashes(fileStore map[string]*FileInfo) map[string]struct{} {
 }
 
 func (w *Worker) SendHeartBeat() {
+	w.fileStoreLock.RLock()
+	defer w.fileStoreLock.RUnlock()
+
 	transport.DialRpcCall(w.MasterAddress, "MasterService.HeartBeat", &protocol.HeartBeatArgs{Address: w.Address, FileHashes: getFileHashes(w.fileStore)}, &protocol.HeartBeatReply{})
 }
 
@@ -81,17 +86,21 @@ func (w *Worker) AddConfig(config *WorkerConfig) *Worker {
 	return w
 }
 
-func (worker *Worker) handleReadFile(filename string) ([]byte, error) {
+func (w *Worker) handleReadFile(filename string) ([]byte, error) {
 
 	filenameHash := common.Hash(filename)
-	fileInfo := worker.fileStore[filenameHash]
+
+	w.fileStoreLock.RLock()
+	fileInfo := w.fileStore[filenameHash]
+	w.fileStoreLock.RUnlock()
+
 	if fileInfo == nil {
 		err := fmt.Errorf("fileinfo for file(%s) not found in worker filestore", filename)
 		logger.Error(common.COMPONENT_WORKER, err.Error())
 		return nil, err
 	}
 
-	fullFilePath := path.Join(worker.Address, filename)
+	fullFilePath := path.Join(w.Address, filename)
 	file, err := os.Open(fullFilePath)
 	if err != nil {
 		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Error while opening file named %s. Error: %s", fullFilePath, err))
@@ -116,17 +125,19 @@ func (worker *Worker) handleReadFile(filename string) ([]byte, error) {
 	return fileData, nil
 }
 
-func (worker *Worker) handleWriteFile(filename string, data []byte) error {
+func (w *Worker) handleWriteFile(filename string, data []byte) error {
 
 	filenameHash := common.Hash(filename)
 	// TODO: Add Pack Creation and Handling Logic
-	worker.fileStore[filenameHash] = &FileInfo{
+	w.fileStoreLock.Lock()
+	w.fileStore[filenameHash] = &FileInfo{
 		PackId: filenameHash,
 		Offset: 0,
 		Size:   len(data),
 	}
+	w.fileStoreLock.Unlock()
 
-	fullFilePath := path.Join(worker.Address, filename)
+	fullFilePath := path.Join(w.Address, filename)
 	if err := os.WriteFile(fullFilePath, data, 0755); err != nil {
 		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Error while writing to file named %s. Error: %s", fullFilePath, err))
 		return err
