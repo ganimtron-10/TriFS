@@ -72,6 +72,9 @@ func (m *Master) handleReadFile(filename string) ([]string, error) {
 func (m *Master) chooseWorker() ([]string, error) {
 	// choose a worker for writing file
 
+	m.WorkerPoolLock.Lock()
+	defer m.WorkerPoolLock.Unlock()
+
 	workerCount := len(m.WorkerPool)
 	if workerCount == 0 {
 		return []string{}, fmt.Errorf("no worker available")
@@ -89,9 +92,6 @@ func (m *Master) chooseWorker() ([]string, error) {
 
 func (m *Master) handleWriteFileRequest(filename string) ([]string, error) {
 	// choose and return the worker url to write to the file
-
-	m.WorkerPoolLock.Lock()
-	defer m.WorkerPoolLock.Unlock()
 
 	workerList, err := m.chooseWorker()
 	if err != nil {
