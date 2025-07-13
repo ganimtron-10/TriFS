@@ -50,17 +50,17 @@ func CreateMaster() *Master {
 	}
 }
 
-func (master *Master) AddConfig(config *MasterConfig) *Master {
-	master.MasterConfig = config
-	return master
+func (m *Master) AddConfig(config *MasterConfig) *Master {
+	m.MasterConfig = config
+	return m
 }
 
-func (master *Master) handleReadFile(filename string) ([]string, error) {
+func (m *Master) handleReadFile(filename string) ([]string, error) {
 	// return the worker url to access the file
-	master.FileHashWorkerMapLock.RLock()
-	defer master.FileHashWorkerMapLock.RUnlock()
+	m.FileHashWorkerMapLock.RLock()
+	defer m.FileHashWorkerMapLock.RUnlock()
 
-	fileWorkerSet, ok := master.FileHashWorkerMap[common.Hash(filename)]
+	fileWorkerSet, ok := m.FileHashWorkerMap[common.Hash(filename)]
 
 	if !ok {
 		return nil, fmt.Errorf("file not found")
@@ -69,16 +69,16 @@ func (master *Master) handleReadFile(filename string) ([]string, error) {
 	return getList(fileWorkerSet), nil
 }
 
-func (master *Master) chooseWorker() ([]string, error) {
+func (m *Master) chooseWorker() ([]string, error) {
 	// choose a worker for writing file
 
-	workerCount := len(master.WorkerPool)
+	workerCount := len(m.WorkerPool)
 	if workerCount == 0 {
 		return []string{}, fmt.Errorf("no worker available")
 	}
 
 	workers := make([]string, 0, workerCount)
-	for worker := range master.WorkerPool {
+	for worker := range m.WorkerPool {
 		workers = append(workers, worker)
 	}
 
@@ -87,13 +87,13 @@ func (master *Master) chooseWorker() ([]string, error) {
 	return workers, nil
 }
 
-func (master *Master) handleWriteFileRequest(filename string) ([]string, error) {
+func (m *Master) handleWriteFileRequest(filename string) ([]string, error) {
 	// choose and return the worker url to write to the file
 
-	master.WorkerPoolLock.Lock()
-	defer master.WorkerPoolLock.Unlock()
+	m.WorkerPoolLock.Lock()
+	defer m.WorkerPoolLock.Unlock()
 
-	workerList, err := master.chooseWorker()
+	workerList, err := m.chooseWorker()
 	if err != nil {
 		logger.Error(common.COMPONENT_MASTER, "No Worker in WorkerPool")
 		return nil, err
@@ -102,11 +102,11 @@ func (master *Master) handleWriteFileRequest(filename string) ([]string, error) 
 	return workerList, nil
 }
 
-func (master *Master) updateFileHashWorkerMap(workerUrl string, prevFileHashes, curFileHashes map[string]struct{}) {
+func (m *Master) updateFileHashWorkerMap(workerUrl string, prevFileHashes, curFileHashes map[string]struct{}) {
 
 	for oldFileHash := range prevFileHashes {
 		if _, foundInNew := curFileHashes[oldFileHash]; !foundInNew {
-			oldFileWorkerSet, ok := master.FileHashWorkerMap[oldFileHash]
+			oldFileWorkerSet, ok := m.FileHashWorkerMap[oldFileHash]
 			if !ok {
 				logger.Error(common.COMPONENT_MASTER, "OldFileHash entry not present in FileHashWorkerMap", "OldFileHash", oldFileHash, "WorkerUrl", workerUrl)
 				// TODO: This shouldnt happen, Either Error out or add a way to handle the condition
@@ -128,29 +128,29 @@ func (master *Master) updateFileHashWorkerMap(workerUrl string, prevFileHashes, 
 
 	for newFileHash := range curFileHashes {
 		if _, foundInOld := prevFileHashes[newFileHash]; !foundInOld {
-			master.FileHashWorkerMap[newFileHash] = FileWorkerSet{}
+			m.FileHashWorkerMap[newFileHash] = FileWorkerSet{}
 			// TODO: Update the FileWorkerSet to properly set primary or secondary worker for now adding as secondary
-			newFileWorkerSet := master.FileHashWorkerMap[newFileHash]
+			newFileWorkerSet := m.FileHashWorkerMap[newFileHash]
 			newFileWorkerSet[workerUrl] = false
 		}
 	}
 }
 
-func (master *Master) handleHeartbeat(workerUrl string, fileHashes map[string]struct{}) {
+func (m *Master) handleHeartbeat(workerUrl string, fileHashes map[string]struct{}) {
 	// update worker pool and filehash map
 
-	master.WorkerPoolLock.Lock()
-	defer master.WorkerPoolLock.Unlock()
-	master.FileHashWorkerMapLock.Lock()
-	defer master.FileHashWorkerMapLock.Unlock()
+	m.WorkerPoolLock.Lock()
+	defer m.WorkerPoolLock.Unlock()
+	m.FileHashWorkerMapLock.Lock()
+	defer m.FileHashWorkerMapLock.Unlock()
 
-	workerInfo, ok := master.WorkerPool[workerUrl]
+	workerInfo, ok := m.WorkerPool[workerUrl]
 	if !ok {
 		workerInfo = &WorkerInfo{}
-		master.WorkerPool[workerUrl] = workerInfo
+		m.WorkerPool[workerUrl] = workerInfo
 	}
 
-	master.updateFileHashWorkerMap(workerUrl, workerInfo.FileHashes, fileHashes)
+	m.updateFileHashWorkerMap(workerUrl, workerInfo.FileHashes, fileHashes)
 	workerInfo.FileHashes = fileHashes
 
 }
