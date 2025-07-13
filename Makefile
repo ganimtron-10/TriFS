@@ -15,5 +15,6 @@ worker:
 # 	go run ./cmd/client
 
 build:
+	@mkdir -p ./build
 	go build -o ./build/master ./cmd/master 
 	go build -o ./build/worker ./cmd/worker 
