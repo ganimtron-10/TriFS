@@ -1,5 +1,8 @@
 # **TriFS: A Distributed File System Optimized for Tiny Files**
 
+> [!WARNING]
+> TriFS is currently under active development. The foundational components are being built, and while the architecture is designed for scalability and robustness, this implementation is **not yet production-ready**. Explorers are highly encouraged to use the system and share their valuable feedback to help shape its future.
+
 ## **Introduction**
 
 TriFS is a distributed file system (DFS) specifically engineered to address the challenges of storing and managing massive volumes of tiny files (typically \< 64KB, but effectively up to \~1MB). Traditional DFS designs, optimized for large, sequential data workloads, exhibit significant inefficiencies when faced with billions or trillions of small, discrete data records. TriFS is built from the ground up in Golang to provide a scalable, performant, and storage-efficient solution for these modern data patterns.
@@ -17,12 +20,12 @@ TriFS is designed to mitigate these issues.
 ## **Key Features**
 
 - **Optimized for Tiny Files:** Core design decisions prioritize efficient handling of small data records.
-- **Distributed Metadata:** Scales metadata management horizontally using a distributed Key-Value store.
-- **Data Packing:** Efficiently utilizes storage by packing multiple tiny files into larger chunks.
+- **Distributed Metadata:** Scales metadata management horizontally using a **Distributed Metadata Service**.
+- **Data Packing:** Efficiently utilizes storage by **packing multiple tiny files into larger, fixed-size data packs** (e.g., ~50MB). This tries to avoids internal fragmentation.
 - **Copy-on-Write (COW) Mutations:** Simplifies updates and appends while supporting versioning.
 - **Tombstone Deletes:** Provides fast logical deletion with background physical removal.
-- **Background Garbage Collection & Compaction:** Reclaims wasted space and improves read efficiency over time.
-- **Erasure Coding:** Ensures data fault tolerance and durability with better storage efficiency than simple replication.
+- **Background Garbage Collection & Compaction:** Reclaims wasted space and improves read efficiency over time by reorganizing data within packs.
+- **Erasure Coding:** Ensures data fault tolerance and durability for **data packs** with better storage efficiency than simple replication.
 - **Thick Client:** Optimizes performance through aggressive caching and operation batching.
 - **Virtual Hierarchy:** Presents a familiar file system tree structure to the user via the client API, independent of physical data layout.
 - **Snapshotting:** Enables point-in-time views of the file system state.
@@ -30,21 +33,21 @@ TriFS is designed to mitigate these issues.
 
 ## **Architecture Overview**
 
-TriFS employs a distributed architecture with a clear separation of concerns:
+TriFS has a distributed architecture with a clear separation of concerns, primarily consisting of three main components:
 
-- **Metadata System:** A distributed Key-Value store manages file metadata (File ID, location, size, version, checksum, etc.) and the virtual directory structure.
-- **Data Servers:** Store data in fixed-size chunks (\~10MB), packing multiple tiny files within each chunk. These chunks are erasure coded across servers for fault tolerance.
-- **Client:** The application-facing component that interacts with the Metadata and Data Servers. It manages caching, batches requests, and presents a virtual file system hierarchy to the user.
+- **Master:** Manages the overall file system metadata and coordinates operations. It does not store all the metadata directly, but rather points the Client to the appropriate Worker(s).
+- **Worker:** Stores the actual file data in fixed-size **packs** (~50MB), efficiently packing multiple tiny files within each. These packs are erasure coded across Workers for fault tolerance.
+- **Client:** The application-facing component that interacts with the **Master** for coordination and directly with **Workers** for data transfer. It manages caching, batches requests, and presents a virtual file system hierarchy to the user.
 
 For a more detailed architectural breakdown, refer to the [TriFS Design Document](https://docs.google.com/document/d/161QHUgER5yCfzgVeeZBj3hUqnxjkTUcs90stOqHaAPo/edit?usp=sharing).
 
 ## **How it Works (High-Level)**
 
-1. **Write:** Client requests a write. Metadata system allocates a location (Chunk ID). Client sends data to the appropriate Data Server(s) for packing and erasure coding. Metadata system records the file's location and attributes.
-2. **Read:** Client requests a file using its path. Client's virtual hierarchy logic translates path to File ID via metadata lookup (potentially cached). Client uses File ID to determine Chunk ID and Data Server(s). Client reads the relevant portion of the chunk from the Data Server(s).
-3. **Update/Append:** New data is written using COW to a new location. Metadata is updated to point to the new version.
-4. **Delete:** Metadata entry is marked with a tombstone.
-5. **Background:** GC/Compaction processes run periodically to clean up obsolete data from chunks and reclaim space.
+1.  **Write:** **Client** requests a write. **Master** allocates a location by choosing suitable **Worker(s)**. **Client** sends the data to the designated **Worker(s)** for packing and storage. **Master** records the file's basic information and attributes.
+2.  **Read:** **Client** requests a file using its path. **Client** queries the **Master** to determine which **Worker(s)** hold the file's data. **Client** then reads the relevant portion of the pack directly from the appropriate **Worker(s)**.
+3.  **Update/Append:** New data is written using Copy-on-Write principles to a new location (within a new or existing pack). Metadata managed by the **Master** is updated to point to the new version.
+4.  **Delete:** The **Master** marks the file entry as deleted (a "tombstone").
+5.  **Background:** Garbage collection and compaction processes run periodically on **Workers** to clean up obsolete data from **packs** and reclaim space.
 
 ## **Use Cases**
 
