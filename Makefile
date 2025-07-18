@@ -1,4 +1,4 @@
-.PHONY: default simulate master worker client build
+.PHONY: default simulate master worker client build proto
 
 default: simulate
 
@@ -15,6 +15,15 @@ worker:
 # 	go run ./cmd/client
 
 build:
-	@mkdir -p ./build
-	go build -o ./build/master ./cmd/master 
-	go build -o ./build/worker ./cmd/worker 
+	@mkdir -p ./build/
+	go build -o ./build/master ./cmd/master
+	go build -o ./build/worker ./cmd/worker
+
+
+proto:
+	@mkdir -p ./internal/protocol/
+	protoc --go_out=./internal/protocol/ --go-grpc_out=./internal/protocol/ ./internal/proto/*
+
+clean:
+	@rm -rf ./build/
+	@rm -rf ./internal/protocol/
