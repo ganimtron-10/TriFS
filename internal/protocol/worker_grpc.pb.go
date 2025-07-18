@@ -28,7 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type WorkerServiceClient interface {
 	ReadFile(ctx context.Context, in *ReadFileRequest, opts ...grpc.CallOption) (*ReadFileResponse, error)
-	WriteFile(ctx context.Context, in *WriteFileResponse, opts ...grpc.CallOption) (*WriteFileResponse, error)
+	WriteFile(ctx context.Context, in *WriteFileRequest, opts ...grpc.CallOption) (*WriteFileResponse, error)
 }
 
 type workerServiceClient struct {
@@ -49,7 +49,7 @@ func (c *workerServiceClient) ReadFile(ctx context.Context, in *ReadFileRequest,
 	return out, nil
 }
 
-func (c *workerServiceClient) WriteFile(ctx context.Context, in *WriteFileResponse, opts ...grpc.CallOption) (*WriteFileResponse, error) {
+func (c *workerServiceClient) WriteFile(ctx context.Context, in *WriteFileRequest, opts ...grpc.CallOption) (*WriteFileResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(WriteFileResponse)
 	err := c.cc.Invoke(ctx, WorkerService_WriteFile_FullMethodName, in, out, cOpts...)
@@ -64,7 +64,7 @@ func (c *workerServiceClient) WriteFile(ctx context.Context, in *WriteFileRespon
 // for forward compatibility.
 type WorkerServiceServer interface {
 	ReadFile(context.Context, *ReadFileRequest) (*ReadFileResponse, error)
-	WriteFile(context.Context, *WriteFileResponse) (*WriteFileResponse, error)
+	WriteFile(context.Context, *WriteFileRequest) (*WriteFileResponse, error)
 	mustEmbedUnimplementedWorkerServiceServer()
 }
 
@@ -78,7 +78,7 @@ type UnimplementedWorkerServiceServer struct{}
 func (UnimplementedWorkerServiceServer) ReadFile(context.Context, *ReadFileRequest) (*ReadFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReadFile not implemented")
 }
-func (UnimplementedWorkerServiceServer) WriteFile(context.Context, *WriteFileResponse) (*WriteFileResponse, error) {
+func (UnimplementedWorkerServiceServer) WriteFile(context.Context, *WriteFileRequest) (*WriteFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method WriteFile not implemented")
 }
 func (UnimplementedWorkerServiceServer) mustEmbedUnimplementedWorkerServiceServer() {}
@@ -121,7 +121,7 @@ func _WorkerService_ReadFile_Handler(srv interface{}, ctx context.Context, dec f
 }
 
 func _WorkerService_WriteFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WriteFileResponse)
+	in := new(WriteFileRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func _WorkerService_WriteFile_Handler(srv interface{}, ctx context.Context, dec 
 		FullMethod: WorkerService_WriteFile_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkerServiceServer).WriteFile(ctx, req.(*WriteFileResponse))
+		return srv.(WorkerServiceServer).WriteFile(ctx, req.(*WriteFileRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

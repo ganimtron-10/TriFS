@@ -5,7 +5,7 @@ option go_package = "./;protocol";
 
 service WorkerService {
   rpc ReadFile(ReadFileRequest) returns (ReadFileResponse);
-  rpc WriteFile(WriteFileResponse) returns (WriteFileResponse);
+  rpc WriteFile(WriteFileRequest) returns (WriteFileResponse);
 }
 
 

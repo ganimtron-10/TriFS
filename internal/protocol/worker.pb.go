@@ -218,10 +218,10 @@ const file_internal_proto_worker_proto_rawDesc = "" +
 	"\x10WriteFileRequest\x12\x1a\n" +
 	"\bfilename\x18\x01 \x01(\tR\bfilename\x12\x12\n" +
 	"\x04data\x18\x02 \x01(\fR\x04data\"\x13\n" +
-	"\x11WriteFileResponse2u\n" +
+	"\x11WriteFileResponse2t\n" +
 	"\rWorkerService\x12/\n" +
-	"\bReadFile\x12\x10.ReadFileRequest\x1a\x11.ReadFileResponse\x123\n" +
-	"\tWriteFile\x12\x12.WriteFileResponse\x1a\x12.WriteFileResponseB\rZ\v./;protocolb\x06proto3"
+	"\bReadFile\x12\x10.ReadFileRequest\x1a\x11.ReadFileResponse\x122\n" +
+	"\tWriteFile\x12\x11.WriteFileRequest\x1a\x12.WriteFileResponseB\rZ\v./;protocolb\x06proto3"
 
 var (
 	file_internal_proto_worker_proto_rawDescOnce sync.Once
@@ -244,7 +244,7 @@ var file_internal_proto_worker_proto_goTypes = []any{
 }
 var file_internal_proto_worker_proto_depIdxs = []int32{
 	0, // 0: WorkerService.ReadFile:input_type -> ReadFileRequest
-	3, // 1: WorkerService.WriteFile:input_type -> WriteFileResponse
+	2, // 1: WorkerService.WriteFile:input_type -> WriteFileRequest
 	1, // 2: WorkerService.ReadFile:output_type -> ReadFileResponse
 	3, // 3: WorkerService.WriteFile:output_type -> WriteFileResponse
 	2, // [2:4] is the sub-list for method output_type
