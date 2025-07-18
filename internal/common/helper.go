@@ -3,16 +3,15 @@ package common
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"reflect"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-func ValidateArgsNReply(args, reply any) error {
-	if args == nil || reflect.ValueOf(args).IsNil() {
-		return fmt.Errorf("rpc args is empty")
-	}
-	if reply == nil || reflect.ValueOf(reply).IsNil() {
-		return fmt.Errorf("rpc reply is empty")
+func ValidateRequest(req any) error {
+	if req == nil || reflect.ValueOf(req).IsNil() {
+		return status.Errorf(codes.InvalidArgument, "request is nil")
 	}
 
 	return nil

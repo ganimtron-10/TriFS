@@ -5,44 +5,27 @@ import (
 
 	"github.com/ganimtron-10/TriFS/internal/protocol"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-func TestValidateArgsNReply_Success(t *testing.T) {
-	args := &protocol.HeartBeatArgs{}
-	reply := &protocol.HeartBeatReply{}
+func TestValidateRequest_Success(t *testing.T) {
+	req := &protocol.HeartbeatRequest{}
 
-	err := ValidateArgsNReply(args, reply)
+	err := ValidateRequest(req)
 
-	assert.Nil(t, err, "ValidateArgsNReply should return nil when both input are not nil")
+	assert.Nil(t, err, "ValidateRequest should return nil when both input are not nil")
 }
 
-func TestValidateArgsNReply_ValidateNilInput(t *testing.T) {
-	args := &protocol.HeartBeatArgs{}
-	reply := &protocol.HeartBeatReply{}
+func TestValidateRequest_ValidateNilInput(t *testing.T) {
 
-	err := ValidateArgsNReply(nil, reply)
+	err := ValidateRequest(nil)
 
-	assert.Error(t, err, "ValidateArgsNReply should return an error when args is nil")
-	assert.EqualError(t, err, "rpc args is empty", "Error message should indicate empty args")
+	assert.Error(t, err, "ValidateRequest should return an error when args is nil")
 
-	err = ValidateArgsNReply(args, nil)
+	st, ok := status.FromError(err)
+	assert.True(t, ok, "Error should be a gRPC status error")
+	assert.Equal(t, codes.InvalidArgument, st.Code(), "Error code should be InvalidArgument for nil request")
+	assert.Contains(t, st.Message(), "request is nil", "Error message should indicate nil request")
 
-	assert.Error(t, err, "ValidateArgsNReply should return an error when reply is nil")
-	assert.EqualError(t, err, "rpc reply is empty", "Error message should indicate empty reply")
-}
-
-func TestValidateArgsNReply_ValidateNilPointer(t *testing.T) {
-	var argsPtr *protocol.HeartBeatArgs
-	var replyPtr *protocol.HeartBeatReply
-
-	err := ValidateArgsNReply(argsPtr, replyPtr)
-
-	assert.Error(t, err, "ValidateArgsNReply should return an error when args points to nil")
-	assert.EqualError(t, err, "rpc args is empty", "Error message should indicate empty args")
-
-	args := &protocol.HeartBeatArgs{}
-	err = ValidateArgsNReply(args, replyPtr)
-
-	assert.Error(t, err, "ValidateArgsNReply should return an error when reply points to nil")
-	assert.EqualError(t, err, "rpc reply is empty", "Error message should indicate empty reply")
 }
