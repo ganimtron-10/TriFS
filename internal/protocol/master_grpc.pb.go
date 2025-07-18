@@ -29,7 +29,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MasterServiceClient interface {
 	GetFileWorkers(ctx context.Context, in *GetFileWorkersRequest, opts ...grpc.CallOption) (*GetFileWorkersResponse, error)
-	AllocateFileWorkers(ctx context.Context, in *AllocateFileWorkersRequest, opts ...grpc.CallOption) (*AllocateFileWorkersResponses, error)
+	AllocateFileWorkers(ctx context.Context, in *AllocateFileWorkersRequest, opts ...grpc.CallOption) (*AllocateFileWorkersResponse, error)
 	Heartbeat(ctx context.Context, in *HeartbeatRequest, opts ...grpc.CallOption) (*HeartbeatResponse, error)
 }
 
@@ -51,9 +51,9 @@ func (c *masterServiceClient) GetFileWorkers(ctx context.Context, in *GetFileWor
 	return out, nil
 }
 
-func (c *masterServiceClient) AllocateFileWorkers(ctx context.Context, in *AllocateFileWorkersRequest, opts ...grpc.CallOption) (*AllocateFileWorkersResponses, error) {
+func (c *masterServiceClient) AllocateFileWorkers(ctx context.Context, in *AllocateFileWorkersRequest, opts ...grpc.CallOption) (*AllocateFileWorkersResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AllocateFileWorkersResponses)
+	out := new(AllocateFileWorkersResponse)
 	err := c.cc.Invoke(ctx, MasterService_AllocateFileWorkers_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (c *masterServiceClient) Heartbeat(ctx context.Context, in *HeartbeatReques
 // for forward compatibility.
 type MasterServiceServer interface {
 	GetFileWorkers(context.Context, *GetFileWorkersRequest) (*GetFileWorkersResponse, error)
-	AllocateFileWorkers(context.Context, *AllocateFileWorkersRequest) (*AllocateFileWorkersResponses, error)
+	AllocateFileWorkers(context.Context, *AllocateFileWorkersRequest) (*AllocateFileWorkersResponse, error)
 	Heartbeat(context.Context, *HeartbeatRequest) (*HeartbeatResponse, error)
 	mustEmbedUnimplementedMasterServiceServer()
 }
@@ -91,7 +91,7 @@ type UnimplementedMasterServiceServer struct{}
 func (UnimplementedMasterServiceServer) GetFileWorkers(context.Context, *GetFileWorkersRequest) (*GetFileWorkersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetFileWorkers not implemented")
 }
-func (UnimplementedMasterServiceServer) AllocateFileWorkers(context.Context, *AllocateFileWorkersRequest) (*AllocateFileWorkersResponses, error) {
+func (UnimplementedMasterServiceServer) AllocateFileWorkers(context.Context, *AllocateFileWorkersRequest) (*AllocateFileWorkersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AllocateFileWorkers not implemented")
 }
 func (UnimplementedMasterServiceServer) Heartbeat(context.Context, *HeartbeatRequest) (*HeartbeatResponse, error) {

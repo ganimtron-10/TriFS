@@ -5,7 +5,7 @@ option go_package = "./;protocol";
 
 service MasterService {
   rpc GetFileWorkers(GetFileWorkersRequest) returns (GetFileWorkersResponse);
-  rpc AllocateFileWorkers(AllocateFileWorkersRequest) returns (AllocateFileWorkersResponses);
+  rpc AllocateFileWorkers(AllocateFileWorkersRequest) returns (AllocateFileWorkersResponse);
   rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
 }
 
@@ -22,7 +22,7 @@ message AllocateFileWorkersRequest {
   string filename = 1;
 }
 
-message AllocateFileWorkersResponses {
+message AllocateFileWorkersResponse {
   repeated string worker_urls = 1;
 }
 

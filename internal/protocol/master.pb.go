@@ -153,27 +153,27 @@ func (x *AllocateFileWorkersRequest) GetFilename() string {
 	return ""
 }
 
-type AllocateFileWorkersResponses struct {
+type AllocateFileWorkersResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	WorkerUrls    []string               `protobuf:"bytes,1,rep,name=worker_urls,json=workerUrls,proto3" json:"worker_urls,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *AllocateFileWorkersResponses) Reset() {
-	*x = AllocateFileWorkersResponses{}
+func (x *AllocateFileWorkersResponse) Reset() {
+	*x = AllocateFileWorkersResponse{}
 	mi := &file_internal_proto_master_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *AllocateFileWorkersResponses) String() string {
+func (x *AllocateFileWorkersResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*AllocateFileWorkersResponses) ProtoMessage() {}
+func (*AllocateFileWorkersResponse) ProtoMessage() {}
 
-func (x *AllocateFileWorkersResponses) ProtoReflect() protoreflect.Message {
+func (x *AllocateFileWorkersResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_internal_proto_master_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -185,12 +185,12 @@ func (x *AllocateFileWorkersResponses) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use AllocateFileWorkersResponses.ProtoReflect.Descriptor instead.
-func (*AllocateFileWorkersResponses) Descriptor() ([]byte, []int) {
+// Deprecated: Use AllocateFileWorkersResponse.ProtoReflect.Descriptor instead.
+func (*AllocateFileWorkersResponse) Descriptor() ([]byte, []int) {
 	return file_internal_proto_master_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *AllocateFileWorkersResponses) GetWorkerUrls() []string {
+func (x *AllocateFileWorkersResponse) GetWorkerUrls() []string {
 	if x != nil {
 		return x.WorkerUrls
 	}
@@ -296,17 +296,17 @@ const file_internal_proto_master_proto_rawDesc = "" +
 	"\vworker_urls\x18\x01 \x03(\tR\n" +
 	"workerUrls\"8\n" +
 	"\x1aAllocateFileWorkersRequest\x12\x1a\n" +
-	"\bfilename\x18\x01 \x01(\tR\bfilename\"?\n" +
-	"\x1cAllocateFileWorkersResponses\x12\x1f\n" +
+	"\bfilename\x18\x01 \x01(\tR\bfilename\">\n" +
+	"\x1bAllocateFileWorkersResponse\x12\x1f\n" +
 	"\vworker_urls\x18\x01 \x03(\tR\n" +
 	"workerUrls\"g\n" +
 	"\x10HeartbeatRequest\x12%\n" +
 	"\x0eworker_address\x18\x01 \x01(\tR\rworkerAddress\x12,\n" +
 	"\x12hosted_file_hashes\x18\x02 \x03(\tR\x10hostedFileHashes\"\x13\n" +
-	"\x11HeartbeatResponse2\xd9\x01\n" +
+	"\x11HeartbeatResponse2\xd8\x01\n" +
 	"\rMasterService\x12A\n" +
-	"\x0eGetFileWorkers\x12\x16.GetFileWorkersRequest\x1a\x17.GetFileWorkersResponse\x12Q\n" +
-	"\x13AllocateFileWorkers\x12\x1b.AllocateFileWorkersRequest\x1a\x1d.AllocateFileWorkersResponses\x122\n" +
+	"\x0eGetFileWorkers\x12\x16.GetFileWorkersRequest\x1a\x17.GetFileWorkersResponse\x12P\n" +
+	"\x13AllocateFileWorkers\x12\x1b.AllocateFileWorkersRequest\x1a\x1c.AllocateFileWorkersResponse\x122\n" +
 	"\tHeartbeat\x12\x11.HeartbeatRequest\x1a\x12.HeartbeatResponseB\rZ\v./;protocolb\x06proto3"
 
 var (
@@ -323,19 +323,19 @@ func file_internal_proto_master_proto_rawDescGZIP() []byte {
 
 var file_internal_proto_master_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_internal_proto_master_proto_goTypes = []any{
-	(*GetFileWorkersRequest)(nil),        // 0: GetFileWorkersRequest
-	(*GetFileWorkersResponse)(nil),       // 1: GetFileWorkersResponse
-	(*AllocateFileWorkersRequest)(nil),   // 2: AllocateFileWorkersRequest
-	(*AllocateFileWorkersResponses)(nil), // 3: AllocateFileWorkersResponses
-	(*HeartbeatRequest)(nil),             // 4: HeartbeatRequest
-	(*HeartbeatResponse)(nil),            // 5: HeartbeatResponse
+	(*GetFileWorkersRequest)(nil),       // 0: GetFileWorkersRequest
+	(*GetFileWorkersResponse)(nil),      // 1: GetFileWorkersResponse
+	(*AllocateFileWorkersRequest)(nil),  // 2: AllocateFileWorkersRequest
+	(*AllocateFileWorkersResponse)(nil), // 3: AllocateFileWorkersResponse
+	(*HeartbeatRequest)(nil),            // 4: HeartbeatRequest
+	(*HeartbeatResponse)(nil),           // 5: HeartbeatResponse
 }
 var file_internal_proto_master_proto_depIdxs = []int32{
 	0, // 0: MasterService.GetFileWorkers:input_type -> GetFileWorkersRequest
 	2, // 1: MasterService.AllocateFileWorkers:input_type -> AllocateFileWorkersRequest
 	4, // 2: MasterService.Heartbeat:input_type -> HeartbeatRequest
 	1, // 3: MasterService.GetFileWorkers:output_type -> GetFileWorkersResponse
-	3, // 4: MasterService.AllocateFileWorkers:output_type -> AllocateFileWorkersResponses
+	3, // 4: MasterService.AllocateFileWorkers:output_type -> AllocateFileWorkersResponse
 	5, // 5: MasterService.Heartbeat:output_type -> HeartbeatResponse
 	3, // [3:6] is the sub-list for method output_type
 	0, // [0:3] is the sub-list for method input_type
