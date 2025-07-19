@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+option go_package = "./;protocol";
+
+
+service WorkerService {
+  rpc ReadFile(ReadFileRequest) returns (ReadFileResponse);
+  rpc WriteFile(WriteFileRequest) returns (WriteFileResponse);
+}
+
+
+message ReadFileRequest {
+  string filename = 1;
+}
+
+message ReadFileResponse {
+  string filename = 1;
+  bytes data = 2;
+}
+
+message WriteFileRequest {
+  string filename = 1;
+  bytes data = 2;
+}
+
+message WriteFileResponse {
+}

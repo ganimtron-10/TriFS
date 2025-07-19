@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+option go_package = "./;protocol";
+
+
+service MasterService {
+  rpc GetFileWorkers(GetFileWorkersRequest) returns (GetFileWorkersResponse);
+  rpc AllocateFileWorkers(AllocateFileWorkersRequest) returns (AllocateFileWorkersResponse);
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
+}
+
+
+message GetFileWorkersRequest {
+  string filename = 1;
+}
+
+message GetFileWorkersResponse {
+  repeated string worker_urls = 1;
+}
+
+message AllocateFileWorkersRequest {
+  string filename = 1;
+}
+
+message AllocateFileWorkersResponse {
+  repeated string worker_urls = 1;
+}
+
+message HeartbeatRequest {
+  string worker_address = 1;
+  repeated string hosted_file_hashes = 2;
+}
+
+message HeartbeatResponse {
+}

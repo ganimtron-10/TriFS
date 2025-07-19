@@ -4,19 +4,20 @@ import (
 	"testing"
 
 	"github.com/ganimtron-10/TriFS/internal/common"
+	"github.com/ganimtron-10/TriFS/internal/protocol"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func TestCreateMaster(t *testing.T) {
-
-	master := CreateMaster()
+	master := createMaster()
 
 	assert.NotNil(t, master, "CreateMaster should not return nil")
 	assert.NotNil(t, master.MasterConfig, "MasterConfig should be initialized")
 	assert.Equal(t, common.DEFAULT_MASTER_PORT, master.Port, "Master should use default port")
 	assert.NotNil(t, master.WorkerPool, "WorkerPool should be initialized")
 	assert.Empty(t, master.WorkerPool, "WorkerPool should be empty initially")
-
 }
 
 func TestGetDefaultMasterConfig(t *testing.T) {
@@ -27,7 +28,7 @@ func TestGetDefaultMasterConfig(t *testing.T) {
 }
 
 func TestMaster_AddConfig(t *testing.T) {
-	master := CreateMaster()
+	master := createMaster()
 	newConfig := &MasterConfig{
 		Port: 9000,
 	}
@@ -40,87 +41,150 @@ func TestMaster_AddConfig(t *testing.T) {
 	assert.Same(t, master, updatedMaster, "AddConfig should return the same master instance")
 }
 
-func TestMaster_HandleReadFile_Success(t *testing.T) {
-	master := CreateMaster()
+func TestMasterService_GetFileWorkers_Success(t *testing.T) {
+	master := createMaster()
 
-	filename := "testfile.txt"
-
-	master.WorkerPoolLock.Lock()
-	master.WorkerPool["worker-A:9000"] = &WorkerInfo{}
-	master.WorkerPoolLock.Unlock()
+	filename := "testfile_read.txt"
 
 	master.FileHashWorkerMapLock.Lock()
 	master.FileHashWorkerMap[common.Hash(filename)] = FileWorkerSet{"worker-A:9000": true}
 	master.FileHashWorkerMapLock.Unlock()
 
-	data, err := master.handleReadFile(filename)
+	req := &protocol.GetFileWorkersRequest{Filename: filename}
 
-	assert.NoError(t, err, "handleReadFile should not return an error on success")
+	res, err := master.GetFileWorkers(t.Context(), req)
+
+	assert.NoError(t, err, "GetFileWorkers should not return an error on success")
+	assert.NotNil(t, res, "Response should not be nil on success")
 
 	expectedData := []string{"worker-A:9000"}
-	assert.Equal(t, expectedData, data, "Returned data should match expected bytes")
+	assert.Equal(t, expectedData, res.WorkerUrls, "Reply data should match expected data from handleReadFile")
 }
 
-func TestMaster_HandleReadFile_FileNotFound(t *testing.T) {
-	master := CreateMaster()
+func TestMasterService_GetFileWorkers_FileNotFound(t *testing.T) {
+	master := createMaster()
 
-	filename := "testfile.txt"
+	filename := "nonexistent_file.txt"
+	req := &protocol.GetFileWorkersRequest{Filename: filename}
 
-	_, err := master.handleReadFile(filename)
+	res, err := master.GetFileWorkers(t.Context(), req)
 
-	assert.Error(t, err, "handleReadFile should return an error on failure")
-	assert.EqualError(t, err, "file not found", "Error message should match expected")
+	assert.Error(t, err, "GetFileWorkers should return an error when file is not found")
+	assert.Nil(t, res, "Response should be nil on error")
+
+	st, ok := status.FromError(err)
+	assert.True(t, ok, "Error should be a gRPC status error")
+	assert.Equal(t, codes.Internal, st.Code(), "Error code should be Internal for file not found")
+	assert.Contains(t, st.Message(), "file not found", "Error message should indicate file not found")
 }
 
-func TestMaster_HandleWriteFileRequest_NoWorkers(t *testing.T) {
+func TestMasterService_GetFileWorkers_ValidationNilRequest(t *testing.T) {
+	master := createMaster()
 
-	master := CreateMaster()
+	res, err := master.GetFileWorkers(t.Context(), nil)
 
-	filename := "newfile.txt"
-	workerURL, err := master.handleWriteFileRequest(filename)
+	assert.Error(t, err, "GetFileWorkers should return an error when request is nil")
+	assert.Nil(t, res, "Response should be nil when request is nil")
 
-	assert.Error(t, err, "handleWriteFileRequest should return an error when no workers are available")
-	assert.EqualError(t, err, "no worker available", "Error message should match expected")
-
-	assert.Nil(t, workerURL, "WorkerURL should be nil when no workers are available")
-
+	st, ok := status.FromError(err)
+	assert.True(t, ok, "Error should be a gRPC status error")
+	assert.Equal(t, codes.InvalidArgument, st.Code(), "Error code should be InvalidArgument for nil request")
+	assert.Contains(t, st.Message(), "request is nil", "Error message should indicate nil request")
 }
 
-func TestMaster_HandleWriteFileRequest_OneWorker(t *testing.T) {
+func TestMasterService_Heartbeat_Success(t *testing.T) {
+	master := createMaster()
 
-	master := CreateMaster()
+	workerAddress := "worker-heartbeat-1:9000"
+
+	req := &protocol.HeartbeatRequest{
+		WorkerAddress:    workerAddress,
+		HostedFileHashes: []string{"hash1", "hash2"},
+	}
+
+	assert.Empty(t, master.WorkerPool, "WorkerPool should be empty before heartbeat")
+
+	res, err := master.Heartbeat(t.Context(), req)
+
+	assert.NoError(t, err, "Heartbeat should not return an error on success")
+	assert.NotNil(t, res, "Response should not be nil on success")
+
+	master.WorkerPoolLock.RLock()
+	workerInfo, exists := master.WorkerPool[workerAddress]
+	master.WorkerPoolLock.RUnlock()
+	assert.True(t, exists, "Worker should be added to WorkerPool after heartbeat")
+	assert.Equal(t, 1, len(master.WorkerPool), "WorkerPool should contain exactly one worker")
+
+	assert.NotNil(t, workerInfo.FileHashes, "WorkerInfo FileHashes should not be nil")
+	assert.Contains(t, workerInfo.FileHashes, "hash1", "WorkerInfo should contain hosted file hash")
+	assert.Contains(t, workerInfo.FileHashes, "hash2", "WorkerInfo should contain hosted file hash")
+	assert.Equal(t, 2, len(workerInfo.FileHashes), "WorkerInfo should have correct number of hosted file hashes")
+}
+
+func TestMasterService_Heartbeat_ValidationNilRequest(t *testing.T) {
+	master := createMaster()
+
+	res, err := master.Heartbeat(t.Context(), nil)
+
+	assert.Error(t, err, "Heartbeat should return an error when request is nil")
+	assert.Nil(t, res, "Response should be nil when request is nil")
+
+	st, ok := status.FromError(err)
+	assert.True(t, ok, "Error should be a gRPC status error")
+	assert.Equal(t, codes.InvalidArgument, st.Code(), "Error code should be InvalidArgument for nil request")
+	assert.Contains(t, st.Message(), "request is nil", "Error message should indicate nil request")
+}
+
+func TestMasterService_AllocateWriteLocations_Success(t *testing.T) {
+	master := createMaster()
+
+	filename := "testfile_write.txt"
+	expectedWorkerList := []string{"worker-A:9000"}
 
 	master.WorkerPoolLock.Lock()
-	master.WorkerPool["worker-1:9000"] = &WorkerInfo{}
+	master.WorkerPool[expectedWorkerList[0]] = &WorkerInfo{}
 	master.WorkerPoolLock.Unlock()
 
-	filename := "anotherfile.txt"
-	workerURL, err := master.handleWriteFileRequest(filename)
+	req := &protocol.AllocateFileWorkersRequest{Filename: filename}
 
-	assert.NoError(t, err, "handleWriteFileRequest should not return an error when workers are available")
+	res, err := master.AllocateFileWorkers(t.Context(), req)
 
-	expectedWorkerURL := []string{"worker-1:9000"}
-	assert.Equal(t, expectedWorkerURL, workerURL, "Returned worker URL should match the single worker in the pool")
-
+	assert.NoError(t, err, "AllocateWriteLocations should not return an error on success")
+	assert.NotNil(t, res, "Response should not be nil on success")
+	assert.Equal(t, expectedWorkerList, res.WorkerUrls, "Reply WorkerUrls should match expected from handleWriteFileRequest")
 }
 
-func TestMaster_HandleWriteFileRequest_MultipleWorkers(t *testing.T) {
+func TestMasterService_AllocateWriteLocations_ValidationNilRequest(t *testing.T) {
+	master := createMaster()
 
-	master := CreateMaster()
+	res, err := master.AllocateFileWorkers(t.Context(), nil)
+
+	assert.Error(t, err, "AllocateWriteLocations should return an error when request is nil")
+	assert.Nil(t, res, "Response should be nil when request is nil")
+
+	st, ok := status.FromError(err)
+	assert.True(t, ok, "Error should be a gRPC status error")
+	assert.Equal(t, codes.InvalidArgument, st.Code(), "Error code should be InvalidArgument for nil request")
+	assert.Contains(t, st.Message(), "request is nil", "Error message should indicate nil request")
+}
+
+func TestMasterService_AllocateWriteLocations_NoWorkersError(t *testing.T) {
+	master := createMaster()
 
 	master.WorkerPoolLock.Lock()
-	master.WorkerPool["worker-A:9000"] = &WorkerInfo{}
-	master.WorkerPool["worker-B:9001"] = &WorkerInfo{}
-	master.WorkerPool["worker-C:9002"] = &WorkerInfo{}
+	master.WorkerPool = make(map[string]*WorkerInfo)
 	master.WorkerPoolLock.Unlock()
 
-	filename := "multi_worker_file.txt"
-	workerUrls, err := master.handleWriteFileRequest(filename)
+	filename := "testfile_write_no_worker.txt"
+	req := &protocol.AllocateFileWorkersRequest{Filename: filename}
 
-	assert.NoError(t, err, "handleWriteFileRequest should not return an error when multiple workers are available")
+	res, err := master.AllocateFileWorkers(t.Context(), req)
 
-	expectedWorkers := []string{"worker-A:9000", "worker-B:9001", "worker-C:9002"}
+	assert.Error(t, err, "AllocateWriteLocations should return an error when handleWriteFileRequest fails due to no workers")
+	assert.Nil(t, res, "Response should be nil on error")
 
-	assert.ElementsMatch(t, expectedWorkers, workerUrls, "Returned worker URL should be one of the added workers")
-
+	st, ok := status.FromError(err)
+	assert.True(t, ok, "Error should be a gRPC status error")
+	assert.Equal(t, codes.Internal, st.Code(), "Error code should be Internal for no worker available")
+	assert.Contains(t, st.Message(), "no worker available", "Error message should match expected from handleWriteFileRequest")
 }

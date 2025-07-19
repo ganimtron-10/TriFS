@@ -1,12 +1,15 @@
 package client
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/ganimtron-10/TriFS/internal/common"
 	"github.com/ganimtron-10/TriFS/internal/logger"
 	"github.com/ganimtron-10/TriFS/internal/protocol"
-	"github.com/ganimtron-10/TriFS/internal/transport"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type ClientConfig struct {
@@ -26,7 +29,7 @@ func getDefaultClientConfig() *ClientConfig {
 func CreateClient() *Client {
 	logger.Info(common.COMPONENT_CLIENT, "Creating Client...")
 	return &Client{
-		getDefaultClientConfig(),
+		ClientConfig: getDefaultClientConfig(),
 	}
 }
 
@@ -35,55 +38,96 @@ func (c *Client) AddConfig(config *ClientConfig) *Client {
 	return c
 }
 
-func (c *Client) Read(filename string) error {
-	requestArgs := &protocol.ReadFileRequestArgs{Filename: filename}
-	requestReply := &protocol.ReadFileRequestReply{}
+func dialGRPC(address string) (*grpc.ClientConn, error) {
+	return grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+}
 
-	err := transport.DialRpcCall(c.MasterAddress, "MasterService.ReadFile", requestArgs, requestReply)
+func (c *Client) Read(filename string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	conn, err := dialGRPC(c.MasterAddress)
 	if err != nil {
-		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Master ReadFile Error: %s", err))
+		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Failed to connect to Master: %s", err))
+		return err
+	}
+	defer conn.Close()
+
+	masterClient := protocol.NewMasterServiceClient(conn)
+	req := &protocol.GetFileWorkersRequest{Filename: filename}
+	res, err := masterClient.GetFileWorkers(ctx, req)
+	if err != nil {
+		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Master GetFileWorkers error: %s", err))
 		return err
 	}
 
-	logger.Info(common.COMPONENT_CLIENT, "Master ReadFile Response", "WorkerUrls", requestReply.WorkerUrls)
-
-	args := &protocol.ReadFileArgs{Filename: filename}
-	reply := &protocol.ReadFileReply{}
-
-	if len(requestReply.WorkerUrls) == 0 {
+	if len(res.WorkerUrls) == 0 {
 		return fmt.Errorf("no worker urls returned from master")
 	}
-	err = transport.DialRpcCall(requestReply.WorkerUrls[0], "WorkerService.ReadFile", args, reply)
+
+	logger.Info(common.COMPONENT_CLIENT, "Master GetFileWorkers Response", "WorkerUrls", res.WorkerUrls)
+
+	// TODO: Add Retry and Fallback Logic
+	workerConn, err := dialGRPC(res.WorkerUrls[0])
 	if err != nil {
-		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Worker ReadFile Error: %s", err))
+		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Failed to connect to Worker: %s", err))
+		return err
+	}
+	defer workerConn.Close()
+
+	workerClient := protocol.NewWorkerServiceClient(workerConn)
+	wreq := &protocol.ReadFileRequest{Filename: filename}
+	wres, err := workerClient.ReadFile(ctx, wreq)
+	if err != nil {
+		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Worker ReadFile error: %s", err))
 		return err
 	}
 
-	logger.Info(common.COMPONENT_CLIENT, "Worker ReadFile Response", "Data", string(reply.Data))
+	logger.Info(common.COMPONENT_CLIENT, "Worker ReadFile Response", "Data", string(wres.Data))
 	return nil
 }
 
 func (c *Client) Write(filename, data string) error {
-	requestArgs := &protocol.WriteFileRequestArgs{Filename: filename}
-	requestReply := &protocol.WriteFileRequestReply{}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
 
-	err := transport.DialRpcCall(c.MasterAddress, "MasterService.WriteFile", requestArgs, requestReply)
+	conn, err := dialGRPC(c.MasterAddress)
 	if err != nil {
-		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Master WriteFile Error: %s", err))
+		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Failed to connect to Master: %s", err))
+		return err
+	}
+	defer conn.Close()
+
+	masterClient := protocol.NewMasterServiceClient(conn)
+	req := &protocol.AllocateFileWorkersRequest{Filename: filename}
+	res, err := masterClient.AllocateFileWorkers(ctx, req)
+	if err != nil {
+		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Master AllocateFileWorkers error: %s", err))
 		return err
 	}
 
-	logger.Info(common.COMPONENT_CLIENT, "Master WriteFile Response", "WorkerUrl", requestReply.WorkerUrls)
-
-	args := &protocol.WriteFileArgs{Filename: filename, Data: []byte(data)}
-	reply := &protocol.WriteFileReply{}
-
-	if len(requestReply.WorkerUrls) == 0 {
+	if len(res.WorkerUrls) == 0 {
 		return fmt.Errorf("no worker urls returned from master")
 	}
-	err = transport.DialRpcCall(requestReply.WorkerUrls[0], "WorkerService.WriteFile", args, reply)
+
+	logger.Info(common.COMPONENT_CLIENT, "Master AllocateFileWorkers Response", "WorkerUrls", res.WorkerUrls)
+
+	// TODO: Add Retry and Fallback Logic
+	workerConn, err := dialGRPC(res.WorkerUrls[0])
 	if err != nil {
-		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Worker WriteFile Error: %s", err))
+		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Failed to connect to Worker: %s", err))
+		return err
+	}
+	defer workerConn.Close()
+
+	workerClient := protocol.NewWorkerServiceClient(workerConn)
+	wreq := &protocol.WriteFileRequest{
+		Filename: filename,
+		Data:     []byte(data),
+	}
+	_, err = workerClient.WriteFile(ctx, wreq)
+	if err != nil {
+		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Worker WriteFile error: %s", err))
 		return err
 	}
 

@@ -50,8 +50,11 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	<-sigChan
-	logger.Info(common.COMPONENT_COMMON, "Shutting down simulation...")
 
+	// Wait for everything to complete
+	time.Sleep(5 * time.Second)
+
+	logger.Info(common.COMPONENT_COMMON, "Shutting down simulation...")
 	for _, command := range commandList {
 		if err := command.Process.Kill(); err != nil {
 			fmt.Printf("Unable to kill Command %+v", command)
