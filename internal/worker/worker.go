@@ -154,7 +154,11 @@ func StartWorker() error {
 	}()
 
 	worker.wg.Add(1)
-	go worker.startHeartbeating(worker.ctx)
+	go func() {
+		if err := worker.startHeartbeating(worker.ctx); err != nil {
+			logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Heartbeating failed: %v", err))
+		}
+	}()
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
