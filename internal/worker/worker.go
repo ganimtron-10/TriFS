@@ -71,7 +71,7 @@ func (w *Worker) SendHeartBeat(masterClient protocol.MasterServiceClient) {
 	if err != nil {
 		logger.Error(common.COMPONENT_WORKER, "Sending Heartbeat failed", "reason", err.Error())
 	}
-	logger.Info(common.COMPONENT_WORKER, "Heartbeat sent successfully")
+	// logger.Info(common.COMPONENT_WORKER, "Heartbeat sent successfully")
 }
 
 func createWorker() (*Worker, error) {
