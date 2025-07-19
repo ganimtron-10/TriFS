@@ -22,7 +22,7 @@ func (m *Master) handleGetFileWorkers(filename string) ([]string, error) {
 	return getList(fileWorkerSet), nil
 }
 
-func (m *Master) chooseWorker() ([]string, error) {
+func (m *Master) chooseWorkers() ([]string, error) {
 	// choose a worker for writing file
 
 	m.WorkerPoolLock.Lock()
@@ -46,7 +46,7 @@ func (m *Master) chooseWorker() ([]string, error) {
 func (m *Master) handleAllocateFileWorkers(filename string) ([]string, error) {
 	// choose and return the worker url to write to the file
 
-	workerList, err := m.chooseWorker()
+	workerList, err := m.chooseWorkers()
 	if err != nil {
 		logger.Error(common.COMPONENT_MASTER, "No Worker in WorkerPool")
 		return nil, err
