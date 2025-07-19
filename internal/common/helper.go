@@ -3,7 +3,6 @@ package common
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"net"
 	"reflect"
 
@@ -29,7 +28,8 @@ func Hash(input string) string {
 func GetAddressWithRandomPort() string {
 	listener, err := net.Listen("tcp", ":0")
 	if err != nil {
-		logger.Error(COMPONENT_COMMON, fmt.Sprintf("Unable to creating listener. Error: %s", err))
+		logger.Error(COMPONENT_COMMON, "Unable to creating listener", "error", err.Error())
+		return ""
 	}
 	defer listener.Close()
 
