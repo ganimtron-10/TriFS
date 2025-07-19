@@ -24,6 +24,7 @@ func (w *Worker) handleReadFile(filename string) ([]byte, error) {
 		return nil, err
 	}
 
+	// TODO: Use hashing or id gen instead of using Address
 	fullFilePath := path.Join(w.Address, filename)
 	file, err := os.Open(fullFilePath)
 	if err != nil {
@@ -62,7 +63,7 @@ func (w *Worker) handleWriteFile(filename string, data []byte) error {
 	w.fileStoreLock.Unlock()
 
 	fullFilePath := path.Join(w.Address, filename)
-	if err := os.WriteFile(fullFilePath, data, 0755); err != nil {
+	if err := os.WriteFile(fullFilePath, data, 0644); err != nil {
 		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Error while writing to file named %s. Error: %s", fullFilePath, err))
 		return err
 	}
