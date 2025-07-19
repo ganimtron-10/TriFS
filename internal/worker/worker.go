@@ -113,6 +113,7 @@ func (w *Worker) startHeartbeating(ctx context.Context) error {
 	}
 	defer grpcClient.Close()
 	masterClient := protocol.NewMasterServiceClient(grpcClient)
+	// TODO: Make sure Master is Up, due to lazy grpc conn it doesnt throw error if not connected
 
 	ticker := time.NewTicker(time.Second * time.Duration(w.HeartbeatInterval))
 	defer ticker.Stop()
