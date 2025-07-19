@@ -38,6 +38,8 @@ type Worker struct {
 	fileStore     map[string]*FileInfo
 	fileStoreLock sync.RWMutex
 	ctx           context.Context
+	cancel        context.CancelFunc
+	wg            sync.WaitGroup
 }
 
 func getDefaultWorkerConfig() *WorkerConfig {
@@ -75,10 +77,13 @@ func (w *Worker) SendHeartBeat(masterClient protocol.MasterServiceClient) {
 func createWorker() (*Worker, error) {
 	logger.Info(common.COMPONENT_WORKER, "Creating Worker...")
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	worker := &Worker{
 		WorkerConfig: getDefaultWorkerConfig(),
 		fileStore:    make(map[string]*FileInfo),
-		ctx:          context.Background(),
+		ctx:          ctx,
+		cancel:       cancel,
 	}
 
 	if err := os.Mkdir(worker.Address, 0755); err != nil {
@@ -89,12 +94,18 @@ func createWorker() (*Worker, error) {
 	return worker, nil
 }
 
+func (w *Worker) Shutdown() {
+	w.cancel()
+	w.wg.Wait()
+}
+
 func (w *Worker) AddConfig(config *WorkerConfig) *Worker {
 	w.WorkerConfig = config
 	return w
 }
 
 func (w *Worker) startHeartbeating(ctx context.Context) error {
+	defer w.wg.Done()
 
 	grpcClient, err := grpc.NewClient(w.MasterAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -110,7 +121,7 @@ func (w *Worker) startHeartbeating(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
-			logger.Info(common.COMPONENT_WORKER, "Stopping Heartbeating", "reason", ctx.Err())
+			logger.Info(common.COMPONENT_WORKER, "Stopping Heartbeating", "reason", ctx.Err().Error())
 			return nil
 		case <-ticker.C:
 			w.SendHeartBeat(masterClient)
@@ -132,15 +143,17 @@ func StartWorker() error {
 	grpcServer := grpc.NewServer()
 	protocol.RegisterWorkerServiceServer(grpcServer, worker)
 
+	worker.wg.Add(1)
 	go func() {
+		defer worker.wg.Done()
 		logger.Info(common.COMPONENT_WORKER, "Starting Worker grpcServer...")
 		if err := grpcServer.Serve(lis); err != nil {
 			logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Worker grpcServer failed to serve: %+v", err))
 		}
 	}()
 
-	ctx, cancel := context.WithCancel(worker.ctx)
-	go worker.startHeartbeating(ctx)
+	worker.wg.Add(1)
+	go worker.startHeartbeating(worker.ctx)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -148,7 +161,7 @@ func StartWorker() error {
 	logger.Info(common.COMPONENT_WORKER, "Shutting down Worker grpcServer...")
 
 	grpcServer.GracefulStop()
-	cancel()
+	worker.Shutdown()
 	logger.Info(common.COMPONENT_WORKER, "Stopped Worker grpcServer")
 
 	return nil
