@@ -46,7 +46,6 @@ func (c *Client) Read(filename string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	// Connect to Master
 	conn, err := dialGRPC(c.MasterAddress)
 	if err != nil {
 		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Failed to connect to Master: %s", err))
@@ -68,7 +67,7 @@ func (c *Client) Read(filename string) error {
 
 	logger.Info(common.COMPONENT_CLIENT, "Master GetFileWorkers Response", "WorkerUrls", res.WorkerUrls)
 
-	// Connect to the first Worker
+	// TODO: Add Retry and Fallback Logic
 	workerConn, err := dialGRPC(res.WorkerUrls[0])
 	if err != nil {
 		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Failed to connect to Worker: %s", err))
@@ -92,7 +91,6 @@ func (c *Client) Write(filename, data string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	// Connect to Master
 	conn, err := dialGRPC(c.MasterAddress)
 	if err != nil {
 		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Failed to connect to Master: %s", err))
@@ -114,7 +112,7 @@ func (c *Client) Write(filename, data string) error {
 
 	logger.Info(common.COMPONENT_CLIENT, "Master AllocateFileWorkers Response", "WorkerUrls", res.WorkerUrls)
 
-	// Connect to the first Worker
+	// TODO: Add Retry and Fallback Logic
 	workerConn, err := dialGRPC(res.WorkerUrls[0])
 	if err != nil {
 		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Failed to connect to Worker: %s", err))
