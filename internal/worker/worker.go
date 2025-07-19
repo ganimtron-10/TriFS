@@ -13,7 +13,6 @@ import (
 	"github.com/ganimtron-10/TriFS/internal/common"
 	"github.com/ganimtron-10/TriFS/internal/logger"
 	"github.com/ganimtron-10/TriFS/internal/protocol"
-	"github.com/ganimtron-10/TriFS/internal/transport"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -44,7 +43,7 @@ type Worker struct {
 func getDefaultWorkerConfig() *WorkerConfig {
 	return &WorkerConfig{
 		MasterAddress:     common.DEFAULT_MASTER_ADDRESS,
-		Address:           transport.GetAddressWithRandomPort(),
+		Address:           common.GetAddressWithRandomPort(),
 		HeartbeatInterval: 5,
 	}
 }
