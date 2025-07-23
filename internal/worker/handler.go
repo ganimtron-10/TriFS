@@ -72,5 +72,7 @@ func (w *Worker) handleWriteFile(filename string, data []byte) error {
 		return err
 	}
 
+	w.WAL.addLog(filename, data)
+
 	return nil
 }

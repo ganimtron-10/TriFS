@@ -13,6 +13,7 @@ import (
 	"github.com/ganimtron-10/TriFS/internal/common"
 	"github.com/ganimtron-10/TriFS/internal/logger"
 	"github.com/ganimtron-10/TriFS/internal/protocol"
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -23,6 +24,7 @@ type WorkerConfig struct {
 	MasterAddress     string
 	Address           string
 	HeartbeatInterval int
+	Id                string
 }
 
 type FileInfo struct {
@@ -40,6 +42,7 @@ type Worker struct {
 	ctx           context.Context
 	cancel        context.CancelFunc
 	wg            sync.WaitGroup
+	WAL           WAL
 }
 
 func getDefaultWorkerConfig() *WorkerConfig {
@@ -47,6 +50,7 @@ func getDefaultWorkerConfig() *WorkerConfig {
 		MasterAddress:     common.DEFAULT_MASTER_ADDRESS,
 		Address:           common.GetAddressWithRandomPort(),
 		HeartbeatInterval: 5,
+		Id:                uuid.NewString()[:8],
 	}
 }
 
@@ -79,9 +83,11 @@ func createWorker() (*Worker, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
+	defaultWorkerConfig := getDefaultWorkerConfig()
 	worker := &Worker{
-		WorkerConfig: getDefaultWorkerConfig(),
+		WorkerConfig: defaultWorkerConfig,
 		fileStore:    make(map[string]*FileInfo),
+		WAL:          createWAL(defaultWorkerConfig.Id),
 		ctx:          ctx,
 		cancel:       cancel,
 	}
@@ -95,6 +101,11 @@ func createWorker() (*Worker, error) {
 }
 
 func (w *Worker) Shutdown() {
+	err := w.WAL.flushToFile()
+	if err != nil {
+		logger.Info(common.COMPONENT_WORKER, "Unable to flush WAL", "error", err)
+	}
+
 	w.cancel()
 	w.wg.Wait()
 }
