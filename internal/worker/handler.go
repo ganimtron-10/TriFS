@@ -16,7 +16,7 @@ func (w *Worker) getFullFilePath(fileHash string) string {
 
 func (w *Worker) handleReadFile(filename string) ([]byte, error) {
 
-	filenameHash := common.GetFileHash(filename)
+	filenameHash := common.Hash(filename)
 
 	w.fileStoreLock.RLock()
 	fileInfo := w.fileStore[filenameHash]
@@ -56,7 +56,7 @@ func (w *Worker) handleReadFile(filename string) ([]byte, error) {
 
 func (w *Worker) handleWriteFile(filename string, data []byte) error {
 
-	filenameHash := common.GetFileHash(filename)
+	filenameHash := common.Hash(filename)
 	// TODO: Add Pack Creation and Handling Logic
 	w.fileStoreLock.Lock()
 	w.fileStore[filenameHash] = &FileInfo{

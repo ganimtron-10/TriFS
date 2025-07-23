@@ -13,7 +13,7 @@ func (m *Master) handleGetFileWorkers(filename string) ([]string, error) {
 	m.FileHashWorkerMapLock.RLock()
 	defer m.FileHashWorkerMapLock.RUnlock()
 
-	fileWorkerSet, ok := m.FileHashWorkerMap[common.GetFileHash(filename)]
+	fileWorkerSet, ok := m.FileHashWorkerMap[common.Hash(filename)]
 
 	if !ok {
 		return nil, fmt.Errorf("file not found")

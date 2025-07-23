@@ -1,8 +1,8 @@
 package common
 
 import (
-	"crypto/sha256"
 	"encoding/hex"
+	"hash/fnv"
 	"net"
 	"reflect"
 
@@ -20,13 +20,9 @@ func ValidateRequest(req any) error {
 }
 
 func Hash(input string) string {
-	hasher := sha256.New()
+	hasher := fnv.New32a()
 	hasher.Write([]byte(input))
 	return hex.EncodeToString(hasher.Sum(nil))
-}
-
-func GetFileHash(filename string) string {
-	return Hash(filename)[:10]
 }
 
 func GetAddressWithRandomPort() string {
