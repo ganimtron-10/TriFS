@@ -48,21 +48,23 @@ func main() {
 		}
 	}()
 
+	timeInterval := time.Second * 5
+
 	masterPath := "../cmd/master/main.go"
 	workerPath := "../cmd/worker/main.go"
 	clientPath := "../cmd/client/main.go"
 
 	spawn(masterPath)
-	time.Sleep(time.Second * 5)
+	time.Sleep(timeInterval)
 
 	for i := 0; i < 3; i++ {
 		spawn(workerPath)
 		time.Sleep(time.Second * 1)
 	}
-	time.Sleep(time.Second * 5)
+	time.Sleep(timeInterval)
 
 	spawn(clientPath)
-	time.Sleep(time.Second * 5)
+	time.Sleep(timeInterval)
 
 	// Wait for interrupt signal to gracefully shutdown
 	sigChan := make(chan os.Signal, 1)
