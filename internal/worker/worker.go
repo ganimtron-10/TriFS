@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -92,10 +93,7 @@ func createWorker() (*Worker, error) {
 		cancel:       cancel,
 	}
 
-	if err := os.Mkdir(worker.Address, 0755); err != nil {
-		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Unable to create directory named %s", worker.Address))
-		return nil, fmt.Errorf("unable to initialize worker")
-	}
+	worker.createWorkerDirectoryStructure()
 
 	return worker, nil
 }
@@ -108,6 +106,33 @@ func (w *Worker) Shutdown() {
 
 	w.cancel()
 	w.wg.Wait()
+}
+
+func (w *Worker) createWorkerDirectoryStructure() error {
+	baseDir := w.Id
+	subDirs := []string{
+		"data",
+		"wal",
+	}
+
+	if err := os.MkdirAll(baseDir, 0644); err != nil {
+		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Unable to create base worker directory %s: %v", baseDir, err))
+		return fmt.Errorf("unable to create worker dirs: %w", err)
+	}
+	logger.Info(common.COMPONENT_WORKER, fmt.Sprintf("Worker base directory %s created or already exists.", baseDir))
+
+	for _, subDir := range subDirs {
+
+		fullPath := filepath.Join(baseDir, subDir)
+
+		if err := os.MkdirAll(fullPath, 0644); err != nil {
+			logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Unable to create subdirectory %s: %v", fullPath, err))
+			return fmt.Errorf("unable to create worker dirs: %w", err)
+		}
+		logger.Info(common.COMPONENT_WORKER, fmt.Sprintf("Worker subdirectory %s created or already exists.", fullPath))
+	}
+
+	return nil
 }
 
 func (w *Worker) AddConfig(config *WorkerConfig) *Worker {
