@@ -25,6 +25,10 @@ func Hash(input string) string {
 	return hex.EncodeToString(hasher.Sum(nil))
 }
 
+func GetFileHash(filename string) string {
+	return Hash(filename)[:10]
+}
+
 func GetAddressWithRandomPort() string {
 	listener, err := net.Listen("tcp", ":0")
 	if err != nil {
