@@ -51,6 +51,7 @@ func (wal *WAL) addLog(filename string, data []byte) {
 			logger.Error(common.COMPONENT_WORKER, "Unable to flush WAL", "error", err.Error())
 			// TODO: Need to handle this error
 		}
+		wal.Clear()
 
 	}
 }
@@ -64,15 +65,17 @@ func (wal *WAL) flushToFile() error {
 	}
 	wal.WALLock.RUnlock()
 
-	filePath := wal.getWALFilePath()
-	logger.Info(common.COMPONENT_WORKER, "Retrieved FilePath", "path", filePath)
-	if err := os.MkdirAll(filepath.Dir(filePath), 0644); err != nil {
-		logger.Error(common.COMPONENT_WORKER, "Unable to create WAL directory", "error", err.Error(), "path", filePath)
+	walFilePath := wal.getWALFilePath()
+	logger.Info(common.COMPONENT_WORKER, "Retrieved FilePath", "path", walFilePath)
+	if err := os.MkdirAll(filepath.Dir(walFilePath), 0644); err != nil {
+		logger.Error(common.COMPONENT_WORKER, "Unable to create WAL directory", "error", err.Error(), "path", walFilePath)
+		return err
 	}
 
-	err = os.WriteFile(filePath, data, 0644)
+	err = os.WriteFile(walFilePath, data, 0644)
 	if err != nil {
-		logger.Error(common.COMPONENT_WORKER, "Unable to write to wal file", "error", err.Error(), "path", filePath, "data", data)
+		logger.Error(common.COMPONENT_WORKER, "Unable to write to wal file", "error", err.Error(), "path", walFilePath, "data", data)
+		return err
 	}
 
 	return nil
