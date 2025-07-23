@@ -3,6 +3,7 @@ module github.com/ganimtron-10/TriFS
 go 1.24.3
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/rs/zerolog v1.34.0
 	github.com/stretchr/testify v1.10.0
 	google.golang.org/grpc v1.73.0
