@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+option go_package = "./;protocol";
+
+message FileInfo {
+    string filename_hash = 1;
+    uint64 offset = 2;
+    uint64 size = 3;
+}
+
+message PackInfo {
+    repeated FileInfo file_infos = 1;
+}
