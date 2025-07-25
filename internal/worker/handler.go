@@ -10,8 +10,8 @@ import (
 	"github.com/ganimtron-10/TriFS/internal/logger"
 )
 
-func getFullFilePath(basePath, fileHash string) string {
-	return path.Join(basePath, "data", fileHash)
+func getFullFilePath(basePath, folder, fileHash string) string {
+	return path.Join(basePath, folder, fileHash)
 }
 
 func (w *Worker) handleReadFile(filename string) ([]byte, error) {
@@ -29,7 +29,7 @@ func (w *Worker) handleReadFile(filename string) ([]byte, error) {
 	}
 
 	// TODO: Use hashing or id gen instead of using Address
-	fullFilePath := getFullFilePath(w.Id, filenameHash)
+	fullFilePath := getFullFilePath(w.Id, common.FOLDER_DATA, filenameHash)
 	file, err := os.Open(fullFilePath)
 	if err != nil {
 		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Error while opening file named %s. Error: %s", fullFilePath, err))
@@ -66,7 +66,7 @@ func (w *Worker) handleWriteFile(filename string, data []byte) error {
 	}
 	w.fileStoreLock.Unlock()
 
-	fullFilePath := getFullFilePath(w.Id, filenameHash)
+	fullFilePath := getFullFilePath(w.Id, common.FOLDER_DATA, filenameHash)
 	if err := os.WriteFile(fullFilePath, data, 0644); err != nil {
 		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Error while writing to file named %s. Error: %s", fullFilePath, err))
 		return err

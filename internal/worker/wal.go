@@ -3,7 +3,6 @@ package worker
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"sync"
 	"time"
@@ -26,7 +25,8 @@ func createWAL(basePath string) WAL {
 }
 
 func (wal *WAL) getWALFilePath() string {
-	return path.Join(wal.BasePath, "wal", fmt.Sprintf("wal-%s.log", common.Hash(time.Now().String())))
+	fileName := fmt.Sprintf("wal-%s.log", common.Hash(time.Now().String()))
+	return getFullFilePath(wal.BasePath, common.FOLDER_WAL, fileName)
 }
 
 func (wal *WAL) Clear() {

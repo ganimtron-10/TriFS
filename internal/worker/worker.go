@@ -111,8 +111,9 @@ func (w *Worker) Shutdown() {
 func (w *Worker) createWorkerDirectoryStructure() error {
 	baseDir := w.Id
 	subDirs := []string{
-		"data",
-		"wal",
+		common.FOLDER_DATA,
+		common.FOLDER_WAL,
+		common.FOLDER_PACK,
 	}
 
 	if err := os.MkdirAll(baseDir, 0644); err != nil {
