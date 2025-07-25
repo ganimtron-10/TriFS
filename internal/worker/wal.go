@@ -10,20 +10,17 @@ import (
 
 	"github.com/ganimtron-10/TriFS/internal/common"
 	"github.com/ganimtron-10/TriFS/internal/logger"
-	"github.com/ganimtron-10/TriFS/internal/protocol"
-	"google.golang.org/protobuf/proto"
 )
 
 type WAL struct {
-	protocol.WAL
-
+	Logs     []string
 	BasePath string
 	WALLock  sync.RWMutex
 }
 
 func createWAL(basePath string) WAL {
 	return WAL{
-		WAL:      protocol.WAL{},
+		Logs:     []string{},
 		BasePath: basePath,
 	}
 }
@@ -33,49 +30,57 @@ func (wal *WAL) getWALFilePath() string {
 }
 
 func (wal *WAL) Clear() {
-	wal.WAL = protocol.WAL{}
+	wal.Logs = []string{}
 }
 
-func (wal *WAL) addLog(filename string, data []byte) {
+func (wal *WAL) addLog(filenameHash string) {
 	wal.WALLock.Lock()
-	wal.WAL.Logs = append(wal.WAL.Logs, &protocol.FileLog{
-		Filename: filename,
-		Data:     data,
-	})
+	wal.Logs = append(wal.Logs, filenameHash)
 	wal.WALLock.Unlock()
 
 	// Simulating Flushing
-	if len(wal.WAL.Logs) > 2 {
-		err := wal.flushToFile()
+	if len(wal.Logs) > 2 {
+		copiedLogs, err := wal.flushToFile()
 		if err != nil {
 			logger.Error(common.COMPONENT_WORKER, "Unable to flush WAL", "error", err.Error())
 			// TODO: Need to handle this error
 		}
 		wal.Clear()
+
+		// Start Packing
+		_ = copiedLogs
 	}
 }
 
-func (wal *WAL) flushToFile() error {
-	wal.WALLock.RLock()
-	data, err := proto.Marshal(&wal.WAL)
-	if err != nil {
-		logger.Error(common.COMPONENT_WORKER, "Unable to marshal WAL", "error", err.Error())
-		return err
+func (wal *WAL) flushToFile() ([]string, error) {
+	if len(wal.Logs) == 0 {
+		logger.Info(common.COMPONENT_WORKER, "Nothing to Flush, WAL is Empty")
+		return nil, nil
 	}
+
+	copiedLogs := make([]string, len(wal.Logs))
+
+	wal.WALLock.RLock()
+	copy(copiedLogs, wal.Logs)
 	wal.WALLock.RUnlock()
 
 	walFilePath := wal.getWALFilePath()
 	logger.Info(common.COMPONENT_WORKER, "Retrieved FilePath", "path", walFilePath)
 	if err := os.MkdirAll(filepath.Dir(walFilePath), 0644); err != nil {
 		logger.Error(common.COMPONENT_WORKER, "Unable to create WAL directory", "error", err.Error(), "path", walFilePath)
-		return err
+		return nil, err
 	}
 
-	err = os.WriteFile(walFilePath, data, 0644)
+	stringifiedLogs := ""
+	for _, log := range copiedLogs {
+		stringifiedLogs += log + "\n"
+	}
+
+	err := os.WriteFile(walFilePath, []byte(stringifiedLogs), 0644)
 	if err != nil {
-		logger.Error(common.COMPONENT_WORKER, "Unable to write to wal file", "error", err.Error(), "path", walFilePath, "data", data)
-		return err
+		logger.Error(common.COMPONENT_WORKER, "Unable to write to wal file", "error", err.Error(), "path", walFilePath, "data", stringifiedLogs)
+		return nil, err
 	}
 
-	return nil
+	return copiedLogs, nil
 }

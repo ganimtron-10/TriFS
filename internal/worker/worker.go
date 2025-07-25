@@ -99,7 +99,7 @@ func createWorker() (*Worker, error) {
 }
 
 func (w *Worker) Shutdown() {
-	err := w.WAL.flushToFile()
+	_, err := w.WAL.flushToFile()
 	if err != nil {
 		logger.Info(common.COMPONENT_WORKER, "Unable to flush WAL", "error", err)
 	}
