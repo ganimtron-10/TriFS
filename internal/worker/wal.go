@@ -29,7 +29,7 @@ func createWAL(basePath string) WAL {
 }
 
 func (wal *WAL) getWALFilePath() string {
-	return path.Join(wal.BasePath, "wal", fmt.Sprintf("wal-%s.log", time.Now().Format("15-04-05")))
+	return path.Join(wal.BasePath, "wal", fmt.Sprintf("wal-%s.log", common.Hash(time.Now().String())))
 }
 
 func (wal *WAL) Clear() {
@@ -52,7 +52,6 @@ func (wal *WAL) addLog(filename string, data []byte) {
 			// TODO: Need to handle this error
 		}
 		wal.Clear()
-
 	}
 }
 
