@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	WorkerService_ReadFile_FullMethodName  = "/WorkerService/ReadFile"
 	WorkerService_WriteFile_FullMethodName = "/WorkerService/WriteFile"
+	WorkerService_WritePack_FullMethodName = "/WorkerService/WritePack"
 )
 
 // WorkerServiceClient is the client API for WorkerService service.
@@ -28,7 +29,8 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type WorkerServiceClient interface {
 	ReadFile(ctx context.Context, in *ReadFileRequest, opts ...grpc.CallOption) (*ReadFileResponse, error)
-	WriteFile(ctx context.Context, in *WriteFileRequest, opts ...grpc.CallOption) (*WriteFileResponse, error)
+	WriteFile(ctx context.Context, in *WriteRequest, opts ...grpc.CallOption) (*WriteResponse, error)
+	WritePack(ctx context.Context, in *WriteRequest, opts ...grpc.CallOption) (*WriteResponse, error)
 }
 
 type workerServiceClient struct {
@@ -49,10 +51,20 @@ func (c *workerServiceClient) ReadFile(ctx context.Context, in *ReadFileRequest,
 	return out, nil
 }
 
-func (c *workerServiceClient) WriteFile(ctx context.Context, in *WriteFileRequest, opts ...grpc.CallOption) (*WriteFileResponse, error) {
+func (c *workerServiceClient) WriteFile(ctx context.Context, in *WriteRequest, opts ...grpc.CallOption) (*WriteResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(WriteFileResponse)
+	out := new(WriteResponse)
 	err := c.cc.Invoke(ctx, WorkerService_WriteFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *workerServiceClient) WritePack(ctx context.Context, in *WriteRequest, opts ...grpc.CallOption) (*WriteResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(WriteResponse)
+	err := c.cc.Invoke(ctx, WorkerService_WritePack_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +76,8 @@ func (c *workerServiceClient) WriteFile(ctx context.Context, in *WriteFileReques
 // for forward compatibility.
 type WorkerServiceServer interface {
 	ReadFile(context.Context, *ReadFileRequest) (*ReadFileResponse, error)
-	WriteFile(context.Context, *WriteFileRequest) (*WriteFileResponse, error)
+	WriteFile(context.Context, *WriteRequest) (*WriteResponse, error)
+	WritePack(context.Context, *WriteRequest) (*WriteResponse, error)
 	mustEmbedUnimplementedWorkerServiceServer()
 }
 
@@ -78,8 +91,11 @@ type UnimplementedWorkerServiceServer struct{}
 func (UnimplementedWorkerServiceServer) ReadFile(context.Context, *ReadFileRequest) (*ReadFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReadFile not implemented")
 }
-func (UnimplementedWorkerServiceServer) WriteFile(context.Context, *WriteFileRequest) (*WriteFileResponse, error) {
+func (UnimplementedWorkerServiceServer) WriteFile(context.Context, *WriteRequest) (*WriteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method WriteFile not implemented")
+}
+func (UnimplementedWorkerServiceServer) WritePack(context.Context, *WriteRequest) (*WriteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method WritePack not implemented")
 }
 func (UnimplementedWorkerServiceServer) mustEmbedUnimplementedWorkerServiceServer() {}
 func (UnimplementedWorkerServiceServer) testEmbeddedByValue()                       {}
@@ -121,7 +137,7 @@ func _WorkerService_ReadFile_Handler(srv interface{}, ctx context.Context, dec f
 }
 
 func _WorkerService_WriteFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(WriteFileRequest)
+	in := new(WriteRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -133,7 +149,25 @@ func _WorkerService_WriteFile_Handler(srv interface{}, ctx context.Context, dec 
 		FullMethod: WorkerService_WriteFile_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(WorkerServiceServer).WriteFile(ctx, req.(*WriteFileRequest))
+		return srv.(WorkerServiceServer).WriteFile(ctx, req.(*WriteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _WorkerService_WritePack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WriteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkerServiceServer).WritePack(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkerService_WritePack_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkerServiceServer).WritePack(ctx, req.(*WriteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -152,6 +186,10 @@ var WorkerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "WriteFile",
 			Handler:    _WorkerService_WriteFile_Handler,
+		},
+		{
+			MethodName: "WritePack",
+			Handler:    _WorkerService_WritePack_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

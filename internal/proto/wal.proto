@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+option go_package = "./;protocol";
+
+message FileLog {
+    string filename = 1;
+    bytes data = 2;
+}
+
+message WAL{
+    repeated FileLog logs = 1;
+}

@@ -6,3 +6,9 @@ const (
 	COMPONENT_CLIENT string = "CLIENT"
 	COMPONENT_COMMON string = "COMMON"
 )
+
+const (
+	FOLDER_DATA string = "DATA"
+	FOLDER_WAL  string = "WAL"
+	FOLDER_PACK string = "PACK"
+)

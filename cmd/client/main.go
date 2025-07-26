@@ -1,29 +1,32 @@
 package main
 
 import (
+	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/ganimtron-10/TriFS/internal/client"
 )
 
 func main() {
+	timeInterval := time.Second * 5
 
 	tc := client.CreateClient()
 
 	tc.Read("test.txt")
 
-	tc.Write("test1.txt", "Test File 1")
-	time.Sleep(time.Second * 5)
-	tc.Write("test2.txt", "Test File 2")
-	time.Sleep(time.Second * 5)
-	tc.Write("test3.txt", "Test File 3")
-	time.Sleep(time.Second * 5)
-	tc.Write("test4.txt", "Test File 4")
-	time.Sleep(time.Second * 5)
+	numOfWriteFiles := 10
+	for i := 0; i < numOfWriteFiles; i++ {
+		go tc.Write(fmt.Sprintf("test%d.txt", i), fmt.Sprintf("Test File %d", i))
+		time.Sleep(timeInterval)
+	}
 
-	tc.Read("test1.txt")
-	time.Sleep(time.Second * 5)
-	tc.Read("test3.txt")
-	time.Sleep(time.Second * 5)
+	time.Sleep(timeInterval)
+
+	numOfReadFiles := 3
+	for i := 0; i < numOfReadFiles; i++ {
+		go tc.Read(fmt.Sprintf("test%d.txt", rand.Intn(numOfWriteFiles)))
+		time.Sleep(timeInterval)
+	}
 
 }

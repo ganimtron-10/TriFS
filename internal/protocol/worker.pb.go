@@ -117,7 +117,7 @@ func (x *ReadFileResponse) GetData() []byte {
 	return nil
 }
 
-type WriteFileRequest struct {
+type WriteRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Filename      string                 `protobuf:"bytes,1,opt,name=filename,proto3" json:"filename,omitempty"`
 	Data          []byte                 `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
@@ -125,20 +125,20 @@ type WriteFileRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *WriteFileRequest) Reset() {
-	*x = WriteFileRequest{}
+func (x *WriteRequest) Reset() {
+	*x = WriteRequest{}
 	mi := &file_internal_proto_worker_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *WriteFileRequest) String() string {
+func (x *WriteRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*WriteFileRequest) ProtoMessage() {}
+func (*WriteRequest) ProtoMessage() {}
 
-func (x *WriteFileRequest) ProtoReflect() protoreflect.Message {
+func (x *WriteRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_internal_proto_worker_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -150,45 +150,45 @@ func (x *WriteFileRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use WriteFileRequest.ProtoReflect.Descriptor instead.
-func (*WriteFileRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use WriteRequest.ProtoReflect.Descriptor instead.
+func (*WriteRequest) Descriptor() ([]byte, []int) {
 	return file_internal_proto_worker_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *WriteFileRequest) GetFilename() string {
+func (x *WriteRequest) GetFilename() string {
 	if x != nil {
 		return x.Filename
 	}
 	return ""
 }
 
-func (x *WriteFileRequest) GetData() []byte {
+func (x *WriteRequest) GetData() []byte {
 	if x != nil {
 		return x.Data
 	}
 	return nil
 }
 
-type WriteFileResponse struct {
+type WriteResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *WriteFileResponse) Reset() {
-	*x = WriteFileResponse{}
+func (x *WriteResponse) Reset() {
+	*x = WriteResponse{}
 	mi := &file_internal_proto_worker_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *WriteFileResponse) String() string {
+func (x *WriteResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*WriteFileResponse) ProtoMessage() {}
+func (*WriteResponse) ProtoMessage() {}
 
-func (x *WriteFileResponse) ProtoReflect() protoreflect.Message {
+func (x *WriteResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_internal_proto_worker_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -200,8 +200,8 @@ func (x *WriteFileResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use WriteFileResponse.ProtoReflect.Descriptor instead.
-func (*WriteFileResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use WriteResponse.ProtoReflect.Descriptor instead.
+func (*WriteResponse) Descriptor() ([]byte, []int) {
 	return file_internal_proto_worker_proto_rawDescGZIP(), []int{3}
 }
 
@@ -214,14 +214,15 @@ const file_internal_proto_worker_proto_rawDesc = "" +
 	"\bfilename\x18\x01 \x01(\tR\bfilename\"B\n" +
 	"\x10ReadFileResponse\x12\x1a\n" +
 	"\bfilename\x18\x01 \x01(\tR\bfilename\x12\x12\n" +
-	"\x04data\x18\x02 \x01(\fR\x04data\"B\n" +
-	"\x10WriteFileRequest\x12\x1a\n" +
+	"\x04data\x18\x02 \x01(\fR\x04data\">\n" +
+	"\fWriteRequest\x12\x1a\n" +
 	"\bfilename\x18\x01 \x01(\tR\bfilename\x12\x12\n" +
-	"\x04data\x18\x02 \x01(\fR\x04data\"\x13\n" +
-	"\x11WriteFileResponse2t\n" +
+	"\x04data\x18\x02 \x01(\fR\x04data\"\x0f\n" +
+	"\rWriteResponse2\x98\x01\n" +
 	"\rWorkerService\x12/\n" +
-	"\bReadFile\x12\x10.ReadFileRequest\x1a\x11.ReadFileResponse\x122\n" +
-	"\tWriteFile\x12\x11.WriteFileRequest\x1a\x12.WriteFileResponseB\rZ\v./;protocolb\x06proto3"
+	"\bReadFile\x12\x10.ReadFileRequest\x1a\x11.ReadFileResponse\x12*\n" +
+	"\tWriteFile\x12\r.WriteRequest\x1a\x0e.WriteResponse\x12*\n" +
+	"\tWritePack\x12\r.WriteRequest\x1a\x0e.WriteResponseB\rZ\v./;protocolb\x06proto3"
 
 var (
 	file_internal_proto_worker_proto_rawDescOnce sync.Once
@@ -237,18 +238,20 @@ func file_internal_proto_worker_proto_rawDescGZIP() []byte {
 
 var file_internal_proto_worker_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_internal_proto_worker_proto_goTypes = []any{
-	(*ReadFileRequest)(nil),   // 0: ReadFileRequest
-	(*ReadFileResponse)(nil),  // 1: ReadFileResponse
-	(*WriteFileRequest)(nil),  // 2: WriteFileRequest
-	(*WriteFileResponse)(nil), // 3: WriteFileResponse
+	(*ReadFileRequest)(nil),  // 0: ReadFileRequest
+	(*ReadFileResponse)(nil), // 1: ReadFileResponse
+	(*WriteRequest)(nil),     // 2: WriteRequest
+	(*WriteResponse)(nil),    // 3: WriteResponse
 }
 var file_internal_proto_worker_proto_depIdxs = []int32{
 	0, // 0: WorkerService.ReadFile:input_type -> ReadFileRequest
-	2, // 1: WorkerService.WriteFile:input_type -> WriteFileRequest
-	1, // 2: WorkerService.ReadFile:output_type -> ReadFileResponse
-	3, // 3: WorkerService.WriteFile:output_type -> WriteFileResponse
-	2, // [2:4] is the sub-list for method output_type
-	0, // [0:2] is the sub-list for method input_type
+	2, // 1: WorkerService.WriteFile:input_type -> WriteRequest
+	2, // 2: WorkerService.WritePack:input_type -> WriteRequest
+	1, // 3: WorkerService.ReadFile:output_type -> ReadFileResponse
+	3, // 4: WorkerService.WriteFile:output_type -> WriteResponse
+	3, // 5: WorkerService.WritePack:output_type -> WriteResponse
+	3, // [3:6] is the sub-list for method output_type
+	0, // [0:3] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
