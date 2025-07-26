@@ -44,6 +44,7 @@ type Worker struct {
 	cancel        context.CancelFunc
 	wg            sync.WaitGroup
 	WAL           WAL
+	packCh        chan string
 }
 
 func getDefaultWorkerConfig() *WorkerConfig {
@@ -85,12 +86,14 @@ func createWorker() (*Worker, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	defaultWorkerConfig := getDefaultWorkerConfig()
+	packCh := make(chan string)
 	worker := &Worker{
 		WorkerConfig: defaultWorkerConfig,
 		fileStore:    make(map[string]*FileInfo),
-		WAL:          createWAL(defaultWorkerConfig.Id),
+		WAL:          createWAL(defaultWorkerConfig.Id, packCh),
 		ctx:          ctx,
 		cancel:       cancel,
+		packCh:       packCh,
 	}
 
 	worker.createWorkerDirectoryStructure()
@@ -104,6 +107,7 @@ func (w *Worker) Shutdown() {
 		logger.Info(common.COMPONENT_WORKER, "Unable to flush WAL", "error", err)
 	}
 
+	close(w.packCh)
 	w.cancel()
 	w.wg.Wait()
 }
@@ -167,6 +171,24 @@ func (w *Worker) startHeartbeating(ctx context.Context) error {
 	}
 }
 
+func (w *Worker) handlePacking(ctx context.Context) {
+	defer w.wg.Done()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case walFilePath, ok := <-w.packCh:
+			if !ok {
+				return
+			}
+			if err := w.startPacking(walFilePath); err != nil {
+				logger.Error("Unable to handle Packing", "error", err)
+			}
+		}
+	}
+}
+
 func StartWorker() error {
 	worker, err := createWorker()
 	if err != nil {
@@ -196,6 +218,9 @@ func StartWorker() error {
 			logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Heartbeating failed: %v", err))
 		}
 	}()
+
+	worker.wg.Add(1)
+	go worker.handlePacking(worker.ctx)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -228,7 +253,8 @@ func (w *Worker) ReadFile(ctx context.Context, req *protocol.ReadFileRequest) (*
 	return res, nil
 
 }
-func (w *Worker) WriteFile(ctx context.Context, req *protocol.WriteFileRequest) (*protocol.WriteFileResponse, error) {
+
+func (w *Worker) WriteFile(ctx context.Context, req *protocol.WriteRequest) (*protocol.WriteResponse, error) {
 	if err := common.ValidateRequest(req); err != nil {
 		return nil, err
 	}
@@ -239,6 +265,21 @@ func (w *Worker) WriteFile(ctx context.Context, req *protocol.WriteFileRequest) 
 		return nil, status.Errorf(codes.Internal, "unable to write file %s: %+v", req.Filename, err)
 	}
 
-	return &protocol.WriteFileResponse{}, nil
+	return &protocol.WriteResponse{}, nil
+
+}
+
+func (w *Worker) WritePack(ctx context.Context, req *protocol.WriteRequest) (*protocol.WriteResponse, error) {
+	if err := common.ValidateRequest(req); err != nil {
+		return nil, err
+	}
+
+	err := w.handleWritePack(req.Filename, req.Data)
+	if err != nil {
+		logger.Error(common.COMPONENT_WORKER, "Error while handling WritePack", "error", err.Error())
+		return nil, status.Errorf(codes.Internal, "unable to write pack %s: %+v", req.Filename, err)
+	}
+
+	return &protocol.WriteResponse{}, nil
 
 }

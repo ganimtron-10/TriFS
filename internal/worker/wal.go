@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -14,13 +15,15 @@ import (
 type WAL struct {
 	Logs     []string
 	BasePath string
+	packCh   chan string
 	WALLock  sync.RWMutex
 }
 
-func createWAL(basePath string) WAL {
+func createWAL(basePath string, packCh chan string) WAL {
 	return WAL{
 		Logs:     []string{},
 		BasePath: basePath,
+		packCh:   packCh,
 	}
 }
 
@@ -40,47 +43,40 @@ func (wal *WAL) addLog(filenameHash string) {
 
 	// Simulating Flushing
 	if len(wal.Logs) > 2 {
-		copiedLogs, err := wal.flushToFile()
+		walFilePath, err := wal.flushToFile()
 		if err != nil {
 			logger.Error(common.COMPONENT_WORKER, "Unable to flush WAL", "error", err.Error())
 			// TODO: Need to handle this error
 		}
 		wal.Clear()
 
-		// Start Packing
-		_ = copiedLogs
+		// Trigger Packing
+		wal.packCh <- walFilePath
 	}
 }
 
-func (wal *WAL) flushToFile() ([]string, error) {
+func (wal *WAL) flushToFile() (string, error) {
 	if len(wal.Logs) == 0 {
 		logger.Info(common.COMPONENT_WORKER, "Nothing to Flush, WAL is Empty")
-		return nil, nil
+		return "", nil
 	}
 
-	copiedLogs := make([]string, len(wal.Logs))
-
 	wal.WALLock.RLock()
-	copy(copiedLogs, wal.Logs)
+	stringifiedLogs := strings.Join(wal.Logs, "\n")
 	wal.WALLock.RUnlock()
 
 	walFilePath := wal.getWALFilePath()
 	logger.Info(common.COMPONENT_WORKER, "Retrieved FilePath", "path", walFilePath)
 	if err := os.MkdirAll(filepath.Dir(walFilePath), 0644); err != nil {
 		logger.Error(common.COMPONENT_WORKER, "Unable to create WAL directory", "error", err.Error(), "path", walFilePath)
-		return nil, err
-	}
-
-	stringifiedLogs := ""
-	for _, log := range copiedLogs {
-		stringifiedLogs += log + "\n"
+		return "", err
 	}
 
 	err := os.WriteFile(walFilePath, []byte(stringifiedLogs), 0644)
 	if err != nil {
 		logger.Error(common.COMPONENT_WORKER, "Unable to write to wal file", "error", err.Error(), "path", walFilePath, "data", stringifiedLogs)
-		return nil, err
+		return "", err
 	}
 
-	return copiedLogs, nil
+	return walFilePath, nil
 }

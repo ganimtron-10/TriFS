@@ -76,3 +76,14 @@ func (w *Worker) handleWriteFile(filename string, data []byte) error {
 
 	return nil
 }
+
+func (w *Worker) handleWritePack(filename string, data []byte) error {
+
+	fullPackPath := getFullFilePath(w.Id, common.FOLDER_PACK, filename)
+	if err := os.WriteFile(fullPackPath, data, 0644); err != nil {
+		logger.Error(common.COMPONENT_WORKER, "Error while writing to pack", "error", err.Error(), "fullPackPath", fullPackPath)
+		return err
+	}
+
+	return nil
+}
