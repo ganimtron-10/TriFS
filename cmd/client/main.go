@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/ganimtron-10/TriFS/internal/client"
@@ -10,6 +11,7 @@ import (
 
 func main() {
 	timeInterval := time.Second * 5
+	var wg sync.WaitGroup
 
 	tc := client.CreateClient()
 
@@ -17,16 +19,27 @@ func main() {
 
 	numOfWriteFiles := 10
 	for i := 0; i < numOfWriteFiles; i++ {
-		go tc.Write(fmt.Sprintf("test%d.txt", i), fmt.Sprintf("Test File %d", i))
+		wg.Add(1)
+		go func(index int) {
+			defer wg.Done()
+			tc.Write(fmt.Sprintf("test%d.txt", i), fmt.Sprintf("Test File %d", index))
+		}(i)
 		time.Sleep(timeInterval)
 	}
 
+	wg.Wait()
 	time.Sleep(timeInterval)
 
 	numOfReadFiles := 3
 	for i := 0; i < numOfReadFiles; i++ {
-		go tc.Read(fmt.Sprintf("test%d.txt", rand.Intn(numOfWriteFiles)))
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			tc.Read(fmt.Sprintf("test%d.txt", rand.Intn(numOfWriteFiles)))
+		}()
 		time.Sleep(timeInterval)
 	}
+
+	wg.Wait()
 
 }
