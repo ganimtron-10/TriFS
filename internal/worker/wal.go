@@ -67,7 +67,7 @@ func (wal *WAL) flushToFile() (string, error) {
 
 	walFilePath := wal.getWALFilePath()
 	logger.Info(common.COMPONENT_WORKER, "Retrieved FilePath", "path", walFilePath)
-	if err := os.MkdirAll(filepath.Dir(walFilePath), 0644); err != nil {
+	if err := os.MkdirAll(filepath.Dir(walFilePath), 0755); err != nil {
 		logger.Error(common.COMPONENT_WORKER, "Unable to create WAL directory", "error", err.Error(), "path", walFilePath)
 		return "", err
 	}

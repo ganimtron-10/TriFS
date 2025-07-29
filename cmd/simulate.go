@@ -34,7 +34,7 @@ func spawn(spawnPath string) {
 func main() {
 
 	cwd = ".simulate"
-	err := os.MkdirAll(cwd, 0644)
+	err := os.MkdirAll(cwd, 0755)
 	if err != nil {
 		logger.Error(common.COMPONENT_COMMON, fmt.Sprintf("Unable to create directory named %s", cwd))
 		log.Fatalf("Unable to create directory named %s", cwd)

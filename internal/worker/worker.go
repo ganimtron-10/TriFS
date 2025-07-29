@@ -120,7 +120,7 @@ func (w *Worker) createWorkerDirectoryStructure() error {
 		common.FOLDER_PACK,
 	}
 
-	if err := os.MkdirAll(baseDir, 0644); err != nil {
+	if err := os.MkdirAll(baseDir, 0755); err != nil {
 		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Unable to create base worker directory %s: %v", baseDir, err))
 		return fmt.Errorf("unable to create worker dirs: %w", err)
 	}
@@ -130,7 +130,7 @@ func (w *Worker) createWorkerDirectoryStructure() error {
 
 		fullPath := filepath.Join(baseDir, subDir)
 
-		if err := os.MkdirAll(fullPath, 0644); err != nil {
+		if err := os.MkdirAll(fullPath, 0755); err != nil {
 			logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Unable to create subdirectory %s: %v", fullPath, err))
 			return fmt.Errorf("unable to create worker dirs: %w", err)
 		}
