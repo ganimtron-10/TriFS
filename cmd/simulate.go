@@ -41,7 +41,7 @@ func main() {
 	}
 
 	defer func() {
-		err := os.RemoveAll("./.simulate")
+		err := os.RemoveAll(cwd)
 		if err != nil {
 			logger.Error(common.COMPONENT_COMMON, fmt.Sprintf("Unable to delete directory named %s", cwd))
 			log.Fatalf("Unable to delete directory named %s", cwd)
