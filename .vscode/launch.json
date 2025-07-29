@@ -6,35 +6,35 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}/cmd/master/",
+            "program": "${workspaceFolder}/cmd/master/"
         },
         {
             "name": "Launch Worker 1",
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}/cmd/worker/",
+            "program": "${workspaceFolder}/cmd/worker/"
         },
         {
             "name": "Launch Worker 2",
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}/cmd/worker/",
+            "program": "${workspaceFolder}/cmd/worker/"
         },
         {
             "name": "Launch Worker 3",
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}/cmd/worker/",
+            "program": "${workspaceFolder}/cmd/worker/"
         },
         {
             "name": "Launch Client",
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}/cmd/client/",
+            "program": "${workspaceFolder}/cmd/client/"
         }
     ],
     "compounds": [
