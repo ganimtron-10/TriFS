@@ -52,7 +52,7 @@ func getDefaultWorkerConfig() *WorkerConfig {
 		MasterAddress:     common.DEFAULT_MASTER_ADDRESS,
 		Address:           common.GetAddressWithRandomPort(),
 		HeartbeatInterval: 5,
-		Id:                uuid.NewString()[:8],
+		Id:                uuid.NewString(),
 	}
 }
 
@@ -183,7 +183,7 @@ func (w *Worker) handlePacking(ctx context.Context) {
 				return
 			}
 			if err := w.startPacking(walFilePath); err != nil {
-				logger.Error("Unable to handle Packing", "error", err)
+				logger.Error(common.COMPONENT_WORKER, "Unable to handle Packing", "error", err)
 			}
 		}
 	}
