@@ -13,17 +13,19 @@ import (
 )
 
 type WAL struct {
-	Logs     []string
-	BasePath string
-	packCh   chan string
-	WALLock  sync.RWMutex
+	Logs           []string
+	BasePath       string
+	packCh         chan string
+	WALLock        sync.RWMutex
+	flushThreshold int
 }
 
 func createWAL(basePath string, packCh chan string) WAL {
 	return WAL{
-		Logs:     []string{},
-		BasePath: basePath,
-		packCh:   packCh,
+		Logs:           []string{},
+		BasePath:       basePath,
+		packCh:         packCh,
+		flushThreshold: 2,
 	}
 }
 
@@ -42,7 +44,7 @@ func (wal *WAL) addLog(filenameHash string) {
 	wal.WALLock.Unlock()
 
 	// Simulating Flushing
-	if len(wal.Logs) > 2 {
+	if len(wal.Logs) > wal.flushThreshold {
 		walFilePath, err := wal.flushToFile()
 		if err != nil {
 			logger.Error(common.COMPONENT_WORKER, "Unable to flush WAL", "error", err.Error())
