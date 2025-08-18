@@ -90,7 +90,7 @@ func createPack(walFilePath string, basePath string) (string, []byte, error) {
 		return "", nil, err
 	}
 
-	packId := common.Hash(time.Now().String())
+	packId := common.Hash(fmt.Sprintf("%s-%s", basePath, time.Now().String()))
 
 	packFullFilePath := getFullFilePath(basePath, common.FOLDER_PACK, packId)
 	err = os.WriteFile(packFullFilePath, packData, 0644)
