@@ -58,6 +58,13 @@ func (w *Worker) handleWriteFile(filename string, data []byte) error {
 
 	filenameHash := common.Hash(filename)
 	// TODO: Add Pack Creation and Handling Logic
+
+	fullFilePath := getFullFilePath(w.Id, common.FOLDER_DATA, filenameHash)
+	if err := os.WriteFile(fullFilePath, data, 0644); err != nil {
+		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Error while writing to file named %s. Error: %s", fullFilePath, err))
+		return err
+	}
+
 	w.fileStoreLock.Lock()
 	w.fileStore[filenameHash] = &FileInfo{
 		PackId: filenameHash,
@@ -65,12 +72,6 @@ func (w *Worker) handleWriteFile(filename string, data []byte) error {
 		Size:   len(data),
 	}
 	w.fileStoreLock.Unlock()
-
-	fullFilePath := getFullFilePath(w.Id, common.FOLDER_DATA, filenameHash)
-	if err := os.WriteFile(fullFilePath, data, 0644); err != nil {
-		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Error while writing to file named %s. Error: %s", fullFilePath, err))
-		return err
-	}
 
 	w.WAL.addLog(filenameHash)
 
