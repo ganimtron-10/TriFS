@@ -49,7 +49,7 @@ func createPackData(filenameHashes []string, basePath string) ([]byte, error) {
 
 		curSize, err := rawDataBuffer.Write(fileData)
 		if err != nil {
-			logger.Error(common.COMPONENT_WORKER, "Unable to write to rawDataBuffer", "error", err.Error(), "fileData", fileData)
+			logger.Error(common.COMPONENT_WORKER, "Unable to write to rawDataBuffer", "error", err.Error(), "filenameHash", filenameHash, "fileBytesCount", len(fileData))
 			return nil, err
 		}
 
@@ -112,13 +112,13 @@ func erasurePackFile(packData []byte) ([][]byte, error) {
 
 	shards, err := enc.Split(packData)
 	if err != nil {
-		logger.Error(common.COMPONENT_WORKER, "Unable to split packData", "error", err.Error(), "packData", packData)
+		logger.Error(common.COMPONENT_WORKER, "Unable to split packData", "error", err.Error(), "packBytesCount", len(packData))
 		return nil, err
 	}
 
 	err = enc.Encode(shards)
 	if err != nil {
-		logger.Error(common.COMPONENT_WORKER, "Unable to encode shards", "error", err.Error(), "shards", shards)
+		logger.Error(common.COMPONENT_WORKER, "Unable to encode shards", "error", err.Error(), "shardsCount", len(shards))
 		return nil, err
 	}
 
@@ -214,13 +214,13 @@ func (w *Worker) startPacking(walFilePath string) error {
 
 	shards, err := erasurePackFile(packData)
 	if err != nil {
-		logger.Error(common.COMPONENT_WORKER, "Unable to erasure pack file", "error", err.Error(), "packData", packData)
+		logger.Error(common.COMPONENT_WORKER, "Unable to erasure pack file", "error", err.Error(), "packBytesCount", len(packData))
 		return err
 	}
 
 	err = w.distributePackShards(shards, packId)
 	if err != nil {
-		logger.Error(common.COMPONENT_WORKER, "Unable to distribute pack file shards", "error", err.Error(), "shards", shards)
+		logger.Error(common.COMPONENT_WORKER, "Unable to distribute pack file shards", "error", err.Error(), "shardsCount", len(shards))
 		return err
 	}
 
