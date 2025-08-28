@@ -184,6 +184,9 @@ func (w *Worker) handlePacking(ctx context.Context) {
 			}
 			if err := w.startPacking(walFilePath); err != nil {
 				logger.Error(common.COMPONENT_WORKER, "Unable to handle Packing", "error", err)
+				// TODO: Retrigger pack creation for this walFile file, but we need to handle which step it failed
+				// and whether the pack or shards already exists
+				// w.packCh <- walFilePath // this might go into infinite loop, add loop breaker
 			}
 		}
 	}

@@ -13,6 +13,7 @@ import (
 	"github.com/ganimtron-10/TriFS/internal/logger"
 	"github.com/ganimtron-10/TriFS/internal/protocol"
 	"github.com/klauspost/reedsolomon"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -129,7 +130,10 @@ func (w *Worker) distributePackShards(shards [][]byte, packId string) error {
 	// TODO: Handle mapping of these packs in worker and notify Master on Heartbeat
 	shardsToKeep := 2
 	for i := 0; i < shardsToKeep; i++ {
-		w.handleWritePack(fmt.Sprintf("%s-shard%d", packId, i), shards[i])
+		if err := w.handleWritePack(fmt.Sprintf("%s-shard%d", packId, i), shards[i]); err != nil {
+			logger.Error(common.COMPONENT_WORKER, "Unable to distribute pack file shards", "error", err.Error(), "shards", shards)
+			return err
+		}
 	}
 
 	ctx, cancel := context.WithTimeout(w.ctx, time.Second*5)
@@ -155,38 +159,47 @@ func (w *Worker) distributePackShards(shards [][]byte, packId string) error {
 		return fmt.Errorf("not enough workers to send shards, got only %d", len(res.WorkerUrls))
 	}
 
-	// TODO: Handle Error while sending shards
-	for i, workerAddress := range res.WorkerUrls[:2] {
-		go func(i int, workerAddress string) {
-			ctx, cancel := context.WithTimeout(w.ctx, time.Second*5)
+	eg, egCtx := errgroup.WithContext(w.ctx)
+	for i, workerAddress := range res.WorkerUrls[:shardsToKeep] {
+		eg.Go(func() error {
+			ctx, cancel := context.WithTimeout(egCtx, 5*time.Second)
 			defer cancel()
 
 			conn, err := common.DialGRPC(workerAddress)
 			if err != nil {
-				logger.Error(common.COMPONENT_WORKER, "Failed to connect to Worker", "error", err, "workerAddress", workerAddress)
+				return fmt.Errorf("connect to worker %s: %w", workerAddress, err)
 			}
 			defer conn.Close()
 
 			workerClient := protocol.NewWorkerServiceClient(conn)
-			shardCount := 2 * (i + 1)
-			req := &protocol.WriteRequest{Filename: fmt.Sprintf("%s-shard%d", packId, shardCount), Data: shards[shardCount]}
-			res, err := workerClient.WritePack(ctx, req)
-			if err != nil {
-				logger.Error(common.COMPONENT_WORKER, "Worker WritePack error", "error", err)
-			}
-			logger.Info(common.COMPONENT_WORKER, "Successfully wrote shard", "workerAddress", workerAddress, "shard", 2*(i+1))
 
-			req = &protocol.WriteRequest{Filename: fmt.Sprintf("%s-shard%d", packId, shardCount+1), Data: shards[(shardCount + 1)]}
-			res, err = workerClient.WritePack(ctx, req)
-			if err != nil {
-				logger.Error(common.COMPONENT_WORKER, "Worker WritePack error", "error", err)
+			firstShardIdx := shardsToKeep + (i * 2)
+			if firstShardIdx+1 >= len(shards) {
+				return fmt.Errorf("invalid shard index calculation: %d", firstShardIdx)
 			}
-			logger.Info(common.COMPONENT_WORKER, "Successfully wrote shard", "workerAddress", workerAddress, "shard", (2*(i+1) + 1))
-			_ = res
+			if _, err := workerClient.WritePack(ctx, &protocol.WriteRequest{
+				Filename: fmt.Sprintf("%s-shard%d", packId, firstShardIdx),
+				Data:     shards[firstShardIdx],
+			}); err != nil {
+				return fmt.Errorf("write shard %d to %s: %w", firstShardIdx, workerAddress, err)
+			}
+			logger.Info(common.COMPONENT_WORKER, "Successfully wrote shard", "workerAddress", workerAddress, "shard", firstShardIdx)
 
-		}(i, workerAddress)
+			if _, err := workerClient.WritePack(ctx, &protocol.WriteRequest{
+				Filename: fmt.Sprintf("%s-shard%d", packId, firstShardIdx+1),
+				Data:     shards[firstShardIdx+1],
+			}); err != nil {
+				return fmt.Errorf("write shard %d to %s: %w", firstShardIdx+1, workerAddress, err)
+			}
+			logger.Info(common.COMPONENT_WORKER, "Successfully wrote shard", "workerAddress", workerAddress, "shard", firstShardIdx+1)
+			return nil
+		})
 	}
-
+	if err := eg.Wait(); err != nil {
+		logger.Error(common.COMPONENT_WORKER, "Distributing pack shards failed", "error", err)
+		// TODO: Retry distributing the shards, or store it here in this worker itself
+		return err
+	}
 	return nil
 
 }
