@@ -96,7 +96,10 @@ func createWorker() (*Worker, error) {
 		packCh:       packCh,
 	}
 
-	worker.createWorkerDirectoryStructure()
+	if err := worker.createWorkerDirectoryStructure(); err != nil {
+		cancel()
+		return nil, err
+	}
 
 	return worker, nil
 }
