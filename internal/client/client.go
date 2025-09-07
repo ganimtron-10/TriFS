@@ -8,8 +8,6 @@ import (
 	"github.com/ganimtron-10/TriFS/internal/common"
 	"github.com/ganimtron-10/TriFS/internal/logger"
 	"github.com/ganimtron-10/TriFS/internal/protocol"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 type ClientConfig struct {
@@ -38,15 +36,11 @@ func (c *Client) AddConfig(config *ClientConfig) *Client {
 	return c
 }
 
-func dialGRPC(address string) (*grpc.ClientConn, error) {
-	return grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
-}
-
 func (c *Client) Read(filename string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	conn, err := dialGRPC(c.MasterAddress)
+	conn, err := common.DialGRPC(c.MasterAddress)
 	if err != nil {
 		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Failed to connect to Master: %s", err))
 		return err
@@ -68,7 +62,7 @@ func (c *Client) Read(filename string) error {
 	logger.Info(common.COMPONENT_CLIENT, "Master GetFileWorkers Response", "WorkerUrls", res.WorkerUrls)
 
 	// TODO: Add Retry and Fallback Logic
-	workerConn, err := dialGRPC(res.WorkerUrls[0])
+	workerConn, err := common.DialGRPC(res.WorkerUrls[0])
 	if err != nil {
 		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Failed to connect to Worker: %s", err))
 		return err
@@ -91,7 +85,7 @@ func (c *Client) Write(filename, data string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	conn, err := dialGRPC(c.MasterAddress)
+	conn, err := common.DialGRPC(c.MasterAddress)
 	if err != nil {
 		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Failed to connect to Master: %s", err))
 		return err
@@ -113,7 +107,7 @@ func (c *Client) Write(filename, data string) error {
 	logger.Info(common.COMPONENT_CLIENT, "Master AllocateFileWorkers Response", "WorkerUrls", res.WorkerUrls)
 
 	// TODO: Add Retry and Fallback Logic
-	workerConn, err := dialGRPC(res.WorkerUrls[0])
+	workerConn, err := common.DialGRPC(res.WorkerUrls[0])
 	if err != nil {
 		logger.Error(common.COMPONENT_CLIENT, fmt.Sprintf("Failed to connect to Worker: %s", err))
 		return err
@@ -121,7 +115,7 @@ func (c *Client) Write(filename, data string) error {
 	defer workerConn.Close()
 
 	workerClient := protocol.NewWorkerServiceClient(workerConn)
-	wreq := &protocol.WriteFileRequest{
+	wreq := &protocol.WriteRequest{
 		Filename: filename,
 		Data:     []byte(data),
 	}

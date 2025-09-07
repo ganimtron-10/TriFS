@@ -10,6 +10,10 @@ import (
 	"github.com/ganimtron-10/TriFS/internal/logger"
 )
 
+func getFullFilePath(basePath, folder, fileHash string) string {
+	return path.Join(basePath, folder, fileHash)
+}
+
 func (w *Worker) handleReadFile(filename string) ([]byte, error) {
 
 	filenameHash := common.Hash(filename)
@@ -25,7 +29,7 @@ func (w *Worker) handleReadFile(filename string) ([]byte, error) {
 	}
 
 	// TODO: Use hashing or id gen instead of using Address
-	fullFilePath := path.Join(w.Address, filename)
+	fullFilePath := getFullFilePath(w.Id, common.FOLDER_DATA, filenameHash)
 	file, err := os.Open(fullFilePath)
 	if err != nil {
 		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Error while opening file named %s. Error: %s", fullFilePath, err))
@@ -54,6 +58,13 @@ func (w *Worker) handleWriteFile(filename string, data []byte) error {
 
 	filenameHash := common.Hash(filename)
 	// TODO: Add Pack Creation and Handling Logic
+
+	fullFilePath := getFullFilePath(w.Id, common.FOLDER_DATA, filenameHash)
+	if err := os.WriteFile(fullFilePath, data, 0644); err != nil {
+		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Error while writing to file named %s. Error: %s", fullFilePath, err))
+		return err
+	}
+
 	w.fileStoreLock.Lock()
 	w.fileStore[filenameHash] = &FileInfo{
 		PackId: filenameHash,
@@ -62,9 +73,16 @@ func (w *Worker) handleWriteFile(filename string, data []byte) error {
 	}
 	w.fileStoreLock.Unlock()
 
-	fullFilePath := path.Join(w.Address, filename)
-	if err := os.WriteFile(fullFilePath, data, 0644); err != nil {
-		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Error while writing to file named %s. Error: %s", fullFilePath, err))
+	w.WAL.addLog(filenameHash)
+
+	return nil
+}
+
+func (w *Worker) handleWritePack(filename string, data []byte) error {
+
+	fullPackPath := getFullFilePath(w.Id, common.FOLDER_PACK, filename)
+	if err := os.WriteFile(fullPackPath, data, 0644); err != nil {
+		logger.Error(common.COMPONENT_WORKER, "Error while writing to pack", "error", err.Error(), "fullPackPath", fullPackPath)
 		return err
 	}
 

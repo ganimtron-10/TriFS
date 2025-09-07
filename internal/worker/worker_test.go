@@ -128,7 +128,7 @@ func TestWriteFile_Success(t *testing.T) {
 	worker, _ := createWorker()
 	defer os.RemoveAll(worker.Address)
 
-	req := &protocol.WriteFileRequest{Filename: "writable.txt", Data: []byte("some data")}
+	req := &protocol.WriteRequest{Filename: "writable.txt", Data: []byte("some data")}
 	res, err := worker.WriteFile(context.Background(), req)
 
 	assert.NoError(t, err, "WriteFile should not return error on success")
@@ -142,7 +142,7 @@ func TestWriteFile_Error(t *testing.T) {
 	// simulating error: removing base directory
 	os.RemoveAll(worker.Address)
 
-	req := &protocol.WriteFileRequest{Filename: "readonly.txt", Data: []byte("some data")}
+	req := &protocol.WriteRequest{Filename: "readonly.txt", Data: []byte("some data")}
 	res, err := worker.WriteFile(context.Background(), req)
 
 	assert.Error(t, err, "WriteFile should return an error when write fails")

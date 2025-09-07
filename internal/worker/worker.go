@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/ganimtron-10/TriFS/internal/common"
 	"github.com/ganimtron-10/TriFS/internal/logger"
 	"github.com/ganimtron-10/TriFS/internal/protocol"
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -23,6 +25,7 @@ type WorkerConfig struct {
 	MasterAddress     string
 	Address           string
 	HeartbeatInterval int
+	Id                string
 }
 
 type FileInfo struct {
@@ -40,6 +43,8 @@ type Worker struct {
 	ctx           context.Context
 	cancel        context.CancelFunc
 	wg            sync.WaitGroup
+	WAL           WAL
+	packCh        chan string
 }
 
 func getDefaultWorkerConfig() *WorkerConfig {
@@ -47,6 +52,7 @@ func getDefaultWorkerConfig() *WorkerConfig {
 		MasterAddress:     common.DEFAULT_MASTER_ADDRESS,
 		Address:           common.GetAddressWithRandomPort(),
 		HeartbeatInterval: 5,
+		Id:                uuid.NewString(),
 	}
 }
 
@@ -79,24 +85,62 @@ func createWorker() (*Worker, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
+	defaultWorkerConfig := getDefaultWorkerConfig()
+	packCh := make(chan string)
 	worker := &Worker{
-		WorkerConfig: getDefaultWorkerConfig(),
+		WorkerConfig: defaultWorkerConfig,
 		fileStore:    make(map[string]*FileInfo),
+		WAL:          createWAL(defaultWorkerConfig.Id, packCh),
 		ctx:          ctx,
 		cancel:       cancel,
+		packCh:       packCh,
 	}
 
-	if err := os.Mkdir(worker.Address, 0755); err != nil {
-		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Unable to create directory named %s", worker.Address))
-		return nil, fmt.Errorf("unable to initialize worker")
+	if err := worker.createWorkerDirectoryStructure(); err != nil {
+		cancel()
+		return nil, err
 	}
 
 	return worker, nil
 }
 
 func (w *Worker) Shutdown() {
+	_, err := w.WAL.flushToFile()
+	if err != nil {
+		logger.Info(common.COMPONENT_WORKER, "Unable to flush WAL", "error", err)
+	}
+
+	close(w.packCh)
 	w.cancel()
 	w.wg.Wait()
+}
+
+func (w *Worker) createWorkerDirectoryStructure() error {
+	baseDir := w.Id
+	subDirs := []string{
+		common.FOLDER_DATA,
+		common.FOLDER_WAL,
+		common.FOLDER_PACK,
+	}
+
+	if err := os.MkdirAll(baseDir, 0755); err != nil {
+		logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Unable to create base worker directory %s: %v", baseDir, err))
+		return fmt.Errorf("unable to create worker dirs: %w", err)
+	}
+	logger.Info(common.COMPONENT_WORKER, fmt.Sprintf("Worker base directory %s created or already exists.", baseDir))
+
+	for _, subDir := range subDirs {
+
+		fullPath := filepath.Join(baseDir, subDir)
+
+		if err := os.MkdirAll(fullPath, 0755); err != nil {
+			logger.Error(common.COMPONENT_WORKER, fmt.Sprintf("Unable to create subdirectory %s: %v", fullPath, err))
+			return fmt.Errorf("unable to create worker dirs: %w", err)
+		}
+		logger.Info(common.COMPONENT_WORKER, fmt.Sprintf("Worker subdirectory %s created or already exists.", fullPath))
+	}
+
+	return nil
 }
 
 func (w *Worker) AddConfig(config *WorkerConfig) *Worker {
@@ -126,6 +170,27 @@ func (w *Worker) startHeartbeating(ctx context.Context) error {
 			return nil
 		case <-ticker.C:
 			w.SendHeartBeat(masterClient)
+		}
+	}
+}
+
+func (w *Worker) handlePacking(ctx context.Context) {
+	defer w.wg.Done()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case walFilePath, ok := <-w.packCh:
+			if !ok {
+				return
+			}
+			if err := w.startPacking(walFilePath); err != nil {
+				logger.Error(common.COMPONENT_WORKER, "Unable to handle Packing", "error", err)
+				// TODO: Retrigger pack creation for this walFile file, but we need to handle which step it failed
+				// and whether the pack or shards already exists
+				// w.packCh <- walFilePath // this might go into infinite loop, add loop breaker
+			}
 		}
 	}
 }
@@ -160,6 +225,9 @@ func StartWorker() error {
 		}
 	}()
 
+	worker.wg.Add(1)
+	go worker.handlePacking(worker.ctx)
+
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	<-c
@@ -191,7 +259,8 @@ func (w *Worker) ReadFile(ctx context.Context, req *protocol.ReadFileRequest) (*
 	return res, nil
 
 }
-func (w *Worker) WriteFile(ctx context.Context, req *protocol.WriteFileRequest) (*protocol.WriteFileResponse, error) {
+
+func (w *Worker) WriteFile(ctx context.Context, req *protocol.WriteRequest) (*protocol.WriteResponse, error) {
 	if err := common.ValidateRequest(req); err != nil {
 		return nil, err
 	}
@@ -202,6 +271,21 @@ func (w *Worker) WriteFile(ctx context.Context, req *protocol.WriteFileRequest) 
 		return nil, status.Errorf(codes.Internal, "unable to write file %s: %+v", req.Filename, err)
 	}
 
-	return &protocol.WriteFileResponse{}, nil
+	return &protocol.WriteResponse{}, nil
+
+}
+
+func (w *Worker) WritePack(ctx context.Context, req *protocol.WriteRequest) (*protocol.WriteResponse, error) {
+	if err := common.ValidateRequest(req); err != nil {
+		return nil, err
+	}
+
+	err := w.handleWritePack(req.Filename, req.Data)
+	if err != nil {
+		logger.Error(common.COMPONENT_WORKER, "Error while handling WritePack", "error", err.Error())
+		return nil, status.Errorf(codes.Internal, "unable to write pack %s: %+v", req.Filename, err)
+	}
+
+	return &protocol.WriteResponse{}, nil
 
 }

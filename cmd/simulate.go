@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -13,12 +14,14 @@ import (
 )
 
 var commandList []*exec.Cmd
+var cwd string
 
 func spawn(spawnPath string) {
 	command := exec.Command("go", "run", spawnPath)
 	command.Stdout = os.Stdout
 	command.Stdin = os.Stdin
 	command.Stderr = os.Stderr
+	command.Dir = cwd
 
 	err := command.Start()
 	if err != nil {
@@ -30,21 +33,38 @@ func spawn(spawnPath string) {
 
 func main() {
 
-	masterPath := "./cmd/master/main.go"
-	workerPath := "./cmd/worker/main.go"
-	clientPath := "./cmd/client/main.go"
+	cwd = ".simulate"
+	err := os.MkdirAll(cwd, 0755)
+	if err != nil {
+		logger.Error(common.COMPONENT_COMMON, fmt.Sprintf("Unable to create directory named %s", cwd))
+		log.Fatalf("Unable to create directory named %s", cwd)
+	}
+
+	defer func() {
+		err := os.RemoveAll(cwd)
+		if err != nil {
+			logger.Error(common.COMPONENT_COMMON, fmt.Sprintf("Unable to delete directory named %s", cwd))
+			log.Fatalf("Unable to delete directory named %s", cwd)
+		}
+	}()
+
+	timeInterval := time.Second * 5
+
+	masterPath := "../cmd/master/main.go"
+	workerPath := "../cmd/worker/main.go"
+	clientPath := "../cmd/client/main.go"
 
 	spawn(masterPath)
-	time.Sleep(time.Second * 5)
+	time.Sleep(timeInterval)
 
 	for i := 0; i < 3; i++ {
 		spawn(workerPath)
 		time.Sleep(time.Second * 1)
 	}
-	time.Sleep(time.Second * 5)
+	time.Sleep(timeInterval)
 
 	spawn(clientPath)
-	time.Sleep(time.Second * 5)
+	time.Sleep(timeInterval)
 
 	// Wait for interrupt signal to gracefully shutdown
 	sigChan := make(chan os.Signal, 1)
